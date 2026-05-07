@@ -15,7 +15,8 @@ def test_bootstrap_schema_creates_node_tables(tmp_path: Path):
     db_path = tmp_path / "test.kuzu"
     conn = KuzuConnection(str(db_path))
     conn.connect()
-    conn.bootstrap_schema(Path("kuzu_schema"))
+    schema_dir = Path(__file__).parents[2] / "kuzu_schema"
+    conn.bootstrap_schema(schema_dir)
     result = conn.query("CALL show_tables() RETURN *;")
     table_names = {row["name"] for row in result}
     expected = {
