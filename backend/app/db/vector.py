@@ -1,4 +1,5 @@
 import sqlite3
+import threading
 from pathlib import Path
 
 import sqlite_vec
@@ -9,6 +10,7 @@ class VectorStore:
         self.db_path = db_path
         self.dim = dim
         self._conn: sqlite3.Connection | None = None
+        self._lock = threading.Lock()
 
     def connect(self) -> None:
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
@@ -31,21 +33,22 @@ class VectorStore:
             raise RuntimeError("Not connected")
         if len(embedding) != self.dim:
             raise ValueError(f"Expected dim {self.dim}, got {len(embedding)}")
-        # sqlite-vec needs delete+insert for "upsert"
-        self._conn.execute("DELETE FROM embeddings WHERE id = ?", (id_,))
-        self._conn.execute(
-            "INSERT INTO embeddings(id, embedding) VALUES (?, ?)",
-            (id_, sqlite_vec.serialize_float32(embedding)),
-        )
-        self._conn.commit()
+        with self._lock:
+            self._conn.execute("DELETE FROM embeddings WHERE id = ?", (id_,))
+            self._conn.execute(
+                "INSERT INTO embeddings(id, embedding) VALUES (?, ?)",
+                (id_, sqlite_vec.serialize_float32(embedding)),
+            )
+            self._conn.commit()
 
     def search(self, query: list[float], top_k: int = 12) -> list[dict]:
         if not self._conn:
             raise RuntimeError("Not connected")
-        rows = self._conn.execute(
-            "SELECT id, distance FROM embeddings "
-            "WHERE embedding MATCH ? "
-            "ORDER BY distance LIMIT ?",
-            (sqlite_vec.serialize_float32(query), top_k),
-        ).fetchall()
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT id, distance FROM embeddings "
+                "WHERE embedding MATCH ? "
+                "ORDER BY distance LIMIT ?",
+                (sqlite_vec.serialize_float32(query), top_k),
+            ).fetchall()
         return [{"id": id_, "distance": dist} for id_, dist in rows]
