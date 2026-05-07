@@ -45,6 +45,8 @@ _FIELD_REMAP: dict[type, dict[str, str]] = {
 _EXTRA_EXCLUDE: dict[type, set[str]] = {
     # Agent table has no created_at column at all
     AgentNode: {"created_at"},
+    # AgentFiring uses started_at/completed_at instead of created_at
+    AgentFiringNode: {"created_at"},
 }
 
 

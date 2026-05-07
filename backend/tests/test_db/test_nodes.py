@@ -43,3 +43,15 @@ def test_create_bet_with_vault_pointer(conn: KuzuConnection):
 def test_get_missing_returns_none(conn: KuzuConnection):
     repo = NodeRepository(conn)
     assert repo.get("nonexistent", "Thought") is None
+
+
+def test_create_and_get_agent_firing(conn: KuzuConnection):
+    from app.db.schemas import AgentFiringNode
+
+    repo = NodeRepository(conn)
+    firing = AgentFiringNode(agent_id="engineer-1", trace_id="trace_abc")
+    repo.create(firing)
+    fetched = repo.get(firing.id, "AgentFiring")
+    assert fetched["id"] == firing.id
+    assert fetched["agent_id"] == "engineer-1"
+    assert fetched["trace_id"] == "trace_abc"
