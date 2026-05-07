@@ -1,9 +1,10 @@
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
+from pydantic import Field as PydField  # alias used for discriminated-union Annotated metadata
 
 
 def _gen_id(prefix: str) -> str:
@@ -34,23 +35,17 @@ class _BaseNode(BaseModel):
     created_at: datetime = Field(default_factory=_now)
     embedding_id: str | None = None
 
-    @property
-    def node_type(self) -> NodeType:
-        raise NotImplementedError
-
 
 class ThoughtNode(_BaseNode):
+    node_type: Literal[NodeType.THOUGHT] = NodeType.THOUGHT
     id: str = Field(default_factory=lambda: _gen_id("t"))
     content: str
     source: str  # pwa | voice | web | cli | obsidian | linear | github
     metadata: dict = Field(default_factory=dict)
 
-    @property
-    def node_type(self) -> NodeType:
-        return NodeType.THOUGHT
-
 
 class BetNode(_BaseNode):
+    node_type: Literal[NodeType.BET] = NodeType.BET
     id: str = Field(default_factory=lambda: _gen_id("b"))
     slug: str
     title: str
@@ -59,54 +54,39 @@ class BetNode(_BaseNode):
     horizon: str = "Q"
     confidence: str = "medium"
 
-    @property
-    def node_type(self) -> NodeType:
-        return NodeType.BET
-
 
 class TaskNode(_BaseNode):
+    node_type: Literal[NodeType.TASK] = NodeType.TASK
     id: str = Field(default_factory=lambda: _gen_id("k"))
     linear_id: str
     title: str
     status: str = "todo"
 
-    @property
-    def node_type(self) -> NodeType:
-        return NodeType.TASK
-
 
 class DecisionNode(_BaseNode):
+    node_type: Literal[NodeType.DECISION] = NodeType.DECISION
     id: str = Field(default_factory=lambda: _gen_id("d"))
     content: str
     decided_by: str
     reasoning: str = ""
 
-    @property
-    def node_type(self) -> NodeType:
-        return NodeType.DECISION
-
 
 class ConflictNode(_BaseNode):
+    node_type: Literal[NodeType.CONFLICT] = NodeType.CONFLICT
     id: str = Field(default_factory=lambda: _gen_id("c"))
     summary: str
     severity: str = "medium"
 
-    @property
-    def node_type(self) -> NodeType:
-        return NodeType.CONFLICT
-
 
 class OutcomeNode(_BaseNode):
+    node_type: Literal[NodeType.OUTCOME] = NodeType.OUTCOME
     id: str = Field(default_factory=lambda: _gen_id("o"))
     summary: str
     success: bool
 
-    @property
-    def node_type(self) -> NodeType:
-        return NodeType.OUTCOME
-
 
 class AgentFiringNode(_BaseNode):
+    node_type: Literal[NodeType.AGENT_FIRING] = NodeType.AGENT_FIRING
     id: str = Field(default_factory=lambda: _gen_id("f"))
     agent_id: str
     trace_id: str
@@ -114,43 +94,31 @@ class AgentFiringNode(_BaseNode):
     completed_at: datetime | None = None
     outcome: str | None = None  # success | partial | failed
 
-    @property
-    def node_type(self) -> NodeType:
-        return NodeType.AGENT_FIRING
-
 
 class CodeChangeNode(_BaseNode):
+    node_type: Literal[NodeType.CODE_CHANGE] = NodeType.CODE_CHANGE
     id: str = Field(default_factory=lambda: _gen_id("cc"))
     repo: str
     sha: str
     summary: str
 
-    @property
-    def node_type(self) -> NodeType:
-        return NodeType.CODE_CHANGE
-
 
 class ConversationNode(_BaseNode):
+    node_type: Literal[NodeType.CONVERSATION] = NodeType.CONVERSATION
     id: str = Field(default_factory=lambda: _gen_id("cv"))
     summary: str
     vault_path: str | None = None
 
-    @property
-    def node_type(self) -> NodeType:
-        return NodeType.CONVERSATION
-
 
 class DocNode(_BaseNode):
+    node_type: Literal[NodeType.DOC] = NodeType.DOC
     id: str = Field(default_factory=lambda: _gen_id("dc"))
     vault_path: str
     title: str
 
-    @property
-    def node_type(self) -> NodeType:
-        return NodeType.DOC
-
 
 class GateItemNode(_BaseNode):
+    node_type: Literal[NodeType.GATE_ITEM] = NodeType.GATE_ITEM
     id: str = Field(default_factory=lambda: _gen_id("g"))
     prompt: str
     urgency: str = "medium"  # urgent | medium | novel
@@ -158,22 +126,16 @@ class GateItemNode(_BaseNode):
     decision: str | None = None  # approved | vetoed | resteered
     reasoning: str = ""
 
-    @property
-    def node_type(self) -> NodeType:
-        return NodeType.GATE_ITEM
-
 
 class AgentNode(_BaseNode):
+    node_type: Literal[NodeType.AGENT] = NodeType.AGENT
+    # No id default_factory: agents have stable, externally-configured IDs (from agents.yaml)
     id: str
     role: str  # cto | engineer | pm | writer | inbox | ...
     persona: str
     state: str = "idle"  # idle | working | paused | escalated
     current_firing: str | None = None
     last_active: datetime | None = None
-
-    @property
-    def node_type(self) -> NodeType:
-        return NodeType.AGENT
 
 
 class EdgeRecord(BaseModel):
@@ -199,5 +161,5 @@ AnyNode = Annotated[
     | DocNode
     | GateItemNode
     | AgentNode,
-    "any node type",
+    PydField(discriminator="node_type"),
 ]
