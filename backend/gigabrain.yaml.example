@@ -13,7 +13,7 @@ llm:
   api_key_env: ANTHROPIC_API_KEY
 
 telemetry:
-  otlp_endpoint: file:///var/log/gigabrain/traces
+  otlp_endpoint: file://./data/traces
 
 gigaflow:
   enabled: false

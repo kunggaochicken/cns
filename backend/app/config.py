@@ -24,7 +24,7 @@ class LLMConfig(BaseModel):
 
 
 class TelemetryConfig(BaseModel):
-    otlp_endpoint: str = "file:///var/log/gigabrain/traces"
+    otlp_endpoint: str = "file://./data/traces"
 
 
 class GigaFlowConfig(BaseModel):
