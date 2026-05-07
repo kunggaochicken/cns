@@ -34,13 +34,13 @@ gigaflow:
 
 
 def test_health_works_with_full_lifespan(configured_app):
-    client = TestClient(configured_app)
-    resp = client.get("/health")
-    assert resp.status_code == 200
+    with TestClient(configured_app) as client:
+        resp = client.get("/health")
+        assert resp.status_code == 200
 
 
 def test_capture_route_is_mounted(configured_app):
-    client = TestClient(configured_app)
-    # Either succeeds (Ollama up) or 5xx (Ollama down); both confirm the route exists.
-    resp = client.post("/capture", json={"content": "hi", "source": "cli"})
-    assert resp.status_code in (200, 500, 502, 503)
+    with TestClient(configured_app) as client:
+        resp = client.post("/capture", json={"content": "hi", "source": "cli"})
+        # Either succeeds (Ollama up) or 5xx (Ollama down); both confirm the route exists.
+        assert resp.status_code in (200, 500, 502, 503)

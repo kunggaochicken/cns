@@ -1,15 +1,12 @@
-import logging
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi import FastAPI
 
 from app.api import health
-from app.api.stream import make_event_generator
-from app.capture.api import CaptureRequest, CaptureResponse
-from app.capture.normalizer import normalize_and_persist
+from app.api.stream import build_stream_router
+from app.capture.api import build_capture_router
 from app.config import GigaBrainConfig, load_config
 from app.db.edges import EdgeRepository
 from app.db.kuzu import KuzuConnection
@@ -19,8 +16,6 @@ from app.embeddings.factory import build_provider
 from app.events.bus import EventBus
 from app.sparring.engine import SparringEngine
 from app.telemetry.otel import setup_otel
-
-log = logging.getLogger(__name__)
 
 
 def _load_active_config() -> GigaBrainConfig:
@@ -63,6 +58,18 @@ async def lifespan(app: FastAPI):
     app.state.bus = bus
     app.state.embedder = embedder
 
+    # Include routers that need lifespan-built deps.
+    # FastAPI's app.routes is live — dynamic include_router during lifespan works.
+    app.include_router(
+        build_capture_router(
+            nodes=nodes,
+            vec=vec,
+            bus=bus,
+            embedder=embedder,
+        )
+    )
+    app.include_router(build_stream_router(bus))
+
     yield
 
     vec.close()
@@ -71,32 +78,3 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="GigaBrain", version="0.1.0", lifespan=lifespan)
 app.include_router(health.router)
-
-
-@app.post("/capture", response_model=CaptureResponse)
-async def capture(req: CaptureRequest, request: Request):
-    try:
-        state = request.app.state
-        thought = await normalize_and_persist(
-            content=req.content,
-            source=req.source,
-            metadata=req.metadata,
-            nodes=state.nodes,
-            vec=state.vec,
-            bus=state.bus,
-            embedder=state.embedder,
-        )
-        return CaptureResponse(node_id=thought.id, status="sparring")
-    except Exception:
-        log.exception("capture failed")
-        return JSONResponse(status_code=500, content={"detail": "internal error"})
-
-
-@app.get("/stream")
-async def stream(request: Request):
-    try:
-        bus: EventBus = request.app.state.bus
-    except AttributeError:
-        return JSONResponse(status_code=500, content={"detail": "not ready"})
-    _queue, generator = make_event_generator(bus)
-    return StreamingResponse(generator, media_type="text/event-stream")
