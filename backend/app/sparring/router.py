@@ -44,11 +44,11 @@ async def route_sparring_result(
         nodes.create(gate)
         edges.create(
             EdgeRecord(
-                from_id=gate.id,
-                from_type=NodeType.GATE_ITEM,
-                to_id=thought_id,
-                to_type=NodeType.THOUGHT,
-                edge_type="resolved-by",
+                from_id=thought_id,
+                from_type=NodeType.THOUGHT,
+                to_id=gate.id,
+                to_type=NodeType.GATE_ITEM,
+                edge_type="led-to",
                 confidence=1.0,
             )
         )
