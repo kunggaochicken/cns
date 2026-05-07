@@ -10,10 +10,7 @@ class OllamaEmbedder(EmbeddingsProvider):
 
     def __init__(self, cfg: EmbeddingsConfig):
         self.cfg = cfg
-
-    @property
-    def _client(self) -> ollama.AsyncClient:
-        return ollama.AsyncClient(host=self.cfg.base_url)
+        self._client = ollama.AsyncClient(host=cfg.base_url)
 
     @property
     def dim(self) -> int:

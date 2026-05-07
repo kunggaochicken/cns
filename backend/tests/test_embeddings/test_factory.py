@@ -8,7 +8,8 @@ from app.embeddings.ollama import OllamaEmbedder
 
 def test_factory_returns_ollama_provider():
     cfg = EmbeddingsConfig(provider="ollama", model="nomic-embed-text")
-    provider = build_provider(cfg)
+    with patch("ollama.AsyncClient"):
+        provider = build_provider(cfg)
     assert isinstance(provider, OllamaEmbedder)
 
 
@@ -17,7 +18,6 @@ async def test_ollama_embedder_calls_api():
     cfg = EmbeddingsConfig(
         provider="ollama", model="nomic-embed-text", base_url="http://localhost:11434"
     )
-    embedder = OllamaEmbedder(cfg)
     fake_response = {"embedding": [0.1] * 768}
     with patch("ollama.AsyncClient") as MockClient:  # noqa: N806
         instance = MockClient.return_value
@@ -26,6 +26,7 @@ async def test_ollama_embedder_calls_api():
             return fake_response
 
         instance.embeddings = fake_embeddings
+        embedder = OllamaEmbedder(cfg)  # construction MUST be inside the patch block
         vec = await embedder.embed("hello world")
     assert len(vec) == 768
     assert vec[0] == 0.1
