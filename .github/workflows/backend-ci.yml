@@ -1,0 +1,30 @@
+name: backend-ci
+
+on:
+  push:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+      - name: Install Python
+        run: uv python install 3.11
+      - name: Sync deps
+        working-directory: backend
+        run: uv sync --extra dev
+      - name: Run tests
+        working-directory: backend
+        run: uv run pytest -v
+      - name: Lint
+        working-directory: backend
+        run: uv run ruff check .
