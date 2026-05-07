@@ -36,11 +36,18 @@ def retrieve_context(
     seed_nodes: list[dict] = []
     for table in _ALL_TABLES:
         rows = conn.query(
-            f"MATCH (n:{table}) WHERE n.id IN $ids RETURN n.id AS id",
+            f"MATCH (n:{table}) WHERE n.id IN $ids RETURN n",
             {"ids": list(seed_ids)},
         )
         for row in rows:
-            seed_nodes.append({"id": row["id"], "table": table})
+            node = row["n"] if isinstance(row.get("n"), dict) else row
+            seed_nodes.append(
+                {
+                    "id": node.get("id"),
+                    "table": table,
+                    "summary": _summarize(node, table),
+                }
+            )
 
     # Expand neighborhood via BFS over REL edges
     visited_ids = set(seed_ids)
@@ -57,22 +64,57 @@ def retrieve_context(
         for table in _ALL_TABLES:
             rows = conn.query(
                 f"MATCH (a)-[r:REL]-(b:{table}) WHERE a.id IN $ids "
-                "RETURN DISTINCT b.id AS id, r.edge_type AS edge_type, a.id AS from_id",
+                "RETURN DISTINCT b AS b, r.edge_type AS edge_type, a.id AS from_id",
                 {"ids": frontier},
             )
             for row in rows:
-                if row["id"] in visited_ids:
+                b_node = row["b"] if isinstance(row.get("b"), dict) else row
+                b_id = b_node.get("id") if isinstance(b_node, dict) else row.get("id")
+                if b_id in visited_ids:
                     continue
-                visited_ids.add(row["id"])
-                expanded_nodes.append({"id": row["id"], "table": table})
+                visited_ids.add(b_id)
+                expanded_nodes.append(
+                    {
+                        "id": b_id,
+                        "table": table,
+                        "summary": _summarize(
+                            b_node if isinstance(b_node, dict) else {}, table
+                        ),
+                    }
+                )
                 expanded_edges.append(
                     {
                         "from_id": row["from_id"],
-                        "to_id": row["id"],
+                        "to_id": b_id,
                         "edge_type": row["edge_type"],
                     }
                 )
-                next_frontier.append(row["id"])
+                next_frontier.append(b_id)
         frontier = next_frontier
 
     return {"nodes": expanded_nodes, "edges": expanded_edges}
+
+
+def _summarize(node: dict, table: str) -> str:
+    """Build a short human-readable summary of a node for LLM context."""
+    if table == "Thought":
+        return (node.get("content") or "")[:200]
+    if table == "Bet":
+        return f"{node.get('title', '')} — {node.get('slug', '')}"
+    if table == "Decision":
+        return (node.get("content") or "")[:200]
+    if table == "Conflict":
+        return node.get("summary", "")[:200]
+    if table == "GateItem":
+        return (node.get("prompt") or "")[:200]
+    if table == "Doc":
+        return node.get("title", "")
+    if table == "Task":
+        return node.get("title", "")
+    if table == "CodeChange":
+        return f"{node.get('repo', '')}@{node.get('sha', '')[:7]}: {node.get('summary', '')}"
+    if table == "Outcome":
+        return node.get("summary", "")[:200]
+    if table == "Conversation":
+        return node.get("summary", "")[:200]
+    return ""

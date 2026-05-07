@@ -27,9 +27,11 @@ def build_user_message(thought_content: str, context_bundle: dict) -> str:
         "CONTEXT FROM BRAIN (top-k retrieval + 2-hop neighborhood):",
     ]
     for node in context_bundle.get("nodes", [])[:30]:
-        lines.append(
-            f"- [{node.get('table', '?')}] id={node['id']} {node.get('title', '')}".rstrip()
-        )
+        summary = node.get("summary", "")
+        line = f"- [{node.get('table', '?')}] id={node['id']}"
+        if summary:
+            line += f" — {summary}"
+        lines.append(line)
     if context_bundle.get("edges"):
         lines.append("")
         lines.append("EDGES IN CONTEXT:")

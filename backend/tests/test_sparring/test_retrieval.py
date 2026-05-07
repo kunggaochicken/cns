@@ -54,3 +54,8 @@ def test_retrieve_pulls_top_k_and_neighbors(stack):
     ids = {n["id"] for n in result["nodes"]}
     assert bet.id in ids  # nearest
     assert other.id in ids  # depth=1 expansion
+
+    # summary is populated for seed nodes
+    seed_node = next(n for n in result["nodes"] if n["id"] == bet.id)
+    assert "summary" in seed_node
+    assert "Auth pivot" in seed_node["summary"]  # title is in Bet summary
