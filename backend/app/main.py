@@ -93,6 +93,10 @@ async def lifespan(app: FastAPI):
     )
     app.include_router(build_stream_router(bus))
 
+    from app.agents.api import build_agents_router
+
+    app.include_router(build_agents_router(registry=registry, conn=conn))
+
     yield
 
     vec.close()

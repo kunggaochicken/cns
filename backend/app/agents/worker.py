@@ -42,7 +42,9 @@ class AgentWorker:
     async def _handle_fire_neuron(self, event: FireNeuron) -> None:
         try:
             agents = self.registry.get_by_role(event.agent_role)
-            enabled = [a for a in agents if a.get("enabled")]
+            enabled = [
+                a for a in agents if a.get("enabled") and a.get("state") != "paused"
+            ]
             if not enabled:
                 log.warning(
                     "No enabled agents for role %s; dropping firing for thought %s",
