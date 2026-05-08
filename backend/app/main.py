@@ -5,6 +5,7 @@ from pathlib import Path
 from fastapi import FastAPI
 
 from app.api import health
+from app.api.gate_items import build_gate_items_router
 from app.api.graph import build_graph_router
 from app.api.nodes import build_nodes_router
 from app.api.stream import build_stream_router
@@ -100,6 +101,7 @@ async def lifespan(app: FastAPI):
     app.include_router(build_agents_router(registry=registry, conn=conn))
     app.include_router(build_graph_router(conn=conn))
     app.include_router(build_nodes_router(conn=conn, edges=edges))
+    app.include_router(build_gate_items_router(nodes=nodes, conn=conn, bus=bus))
 
     yield
 
