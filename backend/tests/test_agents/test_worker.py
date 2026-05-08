@@ -123,3 +123,123 @@ async def test_worker_drops_event_when_no_agent_matches_role(stack, caplog):
     # No firing should be created
     firings = stack["conn"].query("MATCH (f:AgentFiring) RETURN f.id AS id")
     assert len(firings) == 0
+
+
+@pytest.mark.asyncio
+async def test_worker_marks_firing_failed_when_agent_run_raises(stack, monkeypatch):
+    reg = AgentRegistry(nodes=stack["nodes"], conn=stack["conn"])
+    spec = AgentSpec(id="eng-1", role="engineer", persona="x")
+    reg.sync(FleetConfig(agents=[spec]))
+
+    def fake_init(self, *, spec, llm_cfg, vault_path, repo_path):
+        self.spec = spec
+        self.vault_path = vault_path
+        self.repo_path = repo_path
+
+    async def boom(self, *, firing_id, task_summary):
+        raise RuntimeError("simulated failure")
+
+    monkeypatch.setattr("app.agents.runtime.AgentRuntime.__init__", fake_init)
+    monkeypatch.setattr("app.agents.runtime.AgentRuntime.run", boom)
+
+    worker = AgentWorker(
+        registry=reg,
+        nodes=stack["nodes"],
+        edges=stack["edges"],
+        bus=stack["bus"],
+        llm_cfg=LLMConfig(provider="anthropic", model="x", api_key_env="X"),
+        fleet=FleetConfig(agents=[spec]),
+        vault_path=stack["vault"],
+        repo_path=stack["repo"],
+    )
+    worker.attach()
+
+    from app.db.schemas import ThoughtNode
+
+    thought = ThoughtNode(content="x", source="cli")
+    stack["nodes"].create(thought)
+
+    await stack["bus"].publish(
+        FireNeuron(
+            thought_id=thought.id,
+            agent_role="engineer",
+            task_summary="x",
+        )
+    )
+    await asyncio.sleep(0.2)
+
+    firings = stack["conn"].query(
+        "MATCH (f:AgentFiring) RETURN f.id AS id, f.outcome AS outcome, "
+        "f.completed_at AS completed_at"
+    )
+    assert len(firings) == 1
+    assert firings[0]["outcome"] == "failed"
+    assert firings[0]["completed_at"] is not None
+
+
+@pytest.mark.asyncio
+async def test_worker_drops_event_when_agent_is_disabled(stack, monkeypatch):
+    reg = AgentRegistry(nodes=stack["nodes"], conn=stack["conn"])
+    spec = AgentSpec(id="eng-1", role="engineer", persona="x", enabled=False)
+    reg.sync(FleetConfig(agents=[spec]))
+
+    worker = AgentWorker(
+        registry=reg,
+        nodes=stack["nodes"],
+        edges=stack["edges"],
+        bus=stack["bus"],
+        llm_cfg=LLMConfig(provider="anthropic", model="x", api_key_env="X"),
+        fleet=FleetConfig(agents=[spec]),
+        vault_path=stack["vault"],
+        repo_path=stack["repo"],
+    )
+    worker.attach()
+
+    await stack["bus"].publish(
+        FireNeuron(
+            thought_id="t_x",
+            agent_role="engineer",
+            task_summary="x",
+        )
+    )
+    await asyncio.sleep(0.1)
+
+    firings = stack["conn"].query("MATCH (f:AgentFiring) RETURN f.id AS id")
+    assert len(firings) == 0
+
+
+@pytest.mark.asyncio
+async def test_worker_drops_event_when_agent_is_paused(stack, monkeypatch):
+    reg = AgentRegistry(nodes=stack["nodes"], conn=stack["conn"])
+    spec = AgentSpec(id="eng-1", role="engineer", persona="x")
+    reg.sync(FleetConfig(agents=[spec]))
+
+    # Set paused state directly via Cypher (mimicking what /agents/{id}/pause does)
+    stack["conn"].query(
+        "MATCH (a:Agent) WHERE a.id = $id SET a.state = 'paused'",
+        {"id": "eng-1"},
+    )
+
+    worker = AgentWorker(
+        registry=reg,
+        nodes=stack["nodes"],
+        edges=stack["edges"],
+        bus=stack["bus"],
+        llm_cfg=LLMConfig(provider="anthropic", model="x", api_key_env="X"),
+        fleet=FleetConfig(agents=[spec]),
+        vault_path=stack["vault"],
+        repo_path=stack["repo"],
+    )
+    worker.attach()
+
+    await stack["bus"].publish(
+        FireNeuron(
+            thought_id="t_x",
+            agent_role="engineer",
+            task_summary="x",
+        )
+    )
+    await asyncio.sleep(0.1)
+
+    firings = stack["conn"].query("MATCH (f:AgentFiring) RETURN f.id AS id")
+    assert len(firings) == 0

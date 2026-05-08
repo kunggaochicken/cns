@@ -42,8 +42,20 @@ class AgentWorker:
     def attach(self) -> None:
         self.bus.subscribe("fire.neuron", self._handle_fire_neuron)
 
+    def _mark_firing_complete(self, firing_id: str, outcome: str) -> None:
+        self.nodes.conn.query(
+            "MATCH (f:AgentFiring) WHERE f.id = $id "
+            "SET f.outcome = $outcome, f.completed_at = $completed_at",
+            {
+                "id": firing_id,
+                "outcome": outcome,
+                "completed_at": datetime.now(timezone.utc),
+            },
+        )
+
     async def _handle_fire_neuron(self, event: FireNeuron) -> None:
         tracer = trace.get_tracer("gigabrain.agents.worker")
+        firing_id: str | None = None
         with tracer.start_as_current_span("agent.run") as span:
             inject_gigabrain_attrs(
                 span,
@@ -80,6 +92,7 @@ class AgentWorker:
                     trace_id=f"trace_{event.thought_id}",
                 )
                 self.nodes.create(firing)
+                firing_id = firing.id  # track so the outer except can mark it failed
                 inject_gigabrain_attrs(span, firing_id=firing.id)
 
                 self.edges.create(
@@ -120,18 +133,16 @@ class AgentWorker:
                     outcome = "failed"
 
                 inject_gigabrain_attrs(span, outcome=outcome)
+                self._mark_firing_complete(firing.id, outcome)
 
-                self.nodes.conn.query(
-                    "MATCH (f:AgentFiring) WHERE f.id = $id "
-                    "SET f.outcome = $outcome, f.completed_at = $completed_at",
-                    {
-                        "id": firing.id,
-                        "outcome": outcome,
-                        "completed_at": datetime.now(timezone.utc),
-                    },
-                )
             except Exception:
                 log.exception(
                     "Worker failed processing fire.neuron for thought %s",
                     event.thought_id,
                 )
+                if firing_id is not None:
+                    # Don't leave the firing node in indeterminate state
+                    try:
+                        self._mark_firing_complete(firing_id, "failed")
+                    except Exception:
+                        log.exception("Failed to mark firing %s as failed", firing_id)
