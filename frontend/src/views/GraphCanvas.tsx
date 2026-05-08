@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import cytoscape from "cytoscape";
 import { useGraph } from "@/state/useGraph";
 import { colorForType } from "@/utils/nodeColors";
@@ -19,6 +19,27 @@ export default function GraphCanvas({ onSelectNode }: Props) {
     selectionRequest,
     clearSelectionRequest,
   } = useGraph();
+  const [newIds, setNewIds] = useState<Set<string>>(new Set());
+  const prevIdsRef = useRef<Set<string>>(new Set());
+
+  // Track newly-arrived nodes across renders so we can briefly glow them.
+  useEffect(() => {
+    const currentIds = new Set(nodes.map((n) => n.id));
+    const additions = nodes
+      .filter((n) => !prevIdsRef.current.has(n.id))
+      .map((n) => n.id);
+    if (additions.length > 0) {
+      setNewIds((s) => new Set([...s, ...additions]));
+      window.setTimeout(() => {
+        setNewIds((s) => {
+          const next = new Set(s);
+          for (const id of additions) next.delete(id);
+          return next;
+        });
+      }, 2000);
+    }
+    prevIdsRef.current = currentIds;
+  }, [nodes]);
 
   // Initialize once
   useEffect(() => {
@@ -56,6 +77,16 @@ export default function GraphCanvas({ onSelectNode }: Props) {
           style: {
             "border-color": "#fbbf24",
             "border-width": 3,
+          },
+        },
+        {
+          selector: "node[?new]",
+          style: {
+            "border-color": "#a855f7",
+            "border-width": 6,
+            "shadow-color": "#a855f7",
+            "shadow-blur": 24,
+            "shadow-opacity": 0.9,
           },
         },
         {
@@ -97,6 +128,7 @@ export default function GraphCanvas({ onSelectNode }: Props) {
           nodeType: n.type,
           hot: hotIds.has(n.id) ? 1 : 0,
           gate: gateIds.has(n.id) ? 1 : 0,
+          new: newIds.has(n.id) ? 1 : 0,
         },
       })),
       ...edges.map((e) => ({
@@ -109,7 +141,7 @@ export default function GraphCanvas({ onSelectNode }: Props) {
     ];
     cy.json({ elements: cyElements });
     cy.layout({ name: "cose", animate: false }).run();
-  }, [nodes, edges, hotspots, gateItems]);
+  }, [nodes, edges, hotspots, gateItems, newIds]);
 
   // React to cross-component selection requests (e.g. GateItemList click-through).
   useEffect(() => {
