@@ -11,7 +11,14 @@ interface Props {
 export default function GraphCanvas({ onSelectNode }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
-  const { nodes, edges, hotspots, gateItems } = useGraph();
+  const {
+    nodes,
+    edges,
+    hotspots,
+    gateItems,
+    selectionRequest,
+    clearSelectionRequest,
+  } = useGraph();
 
   // Initialize once
   useEffect(() => {
@@ -103,6 +110,19 @@ export default function GraphCanvas({ onSelectNode }: Props) {
     cy.json({ elements: cyElements });
     cy.layout({ name: "cose", animate: false }).run();
   }, [nodes, edges, hotspots, gateItems]);
+
+  // React to cross-component selection requests (e.g. GateItemList click-through).
+  useEffect(() => {
+    const cy = cyRef.current;
+    if (!cy || !selectionRequest) return;
+    const node = cy.getElementById(selectionRequest.id);
+    if (node && node.length > 0) {
+      cy.center(node);
+      cy.animate({ fit: { eles: node, padding: 60 } }, { duration: 300 });
+      onSelectNode(selectionRequest.table, selectionRequest.id);
+    }
+    clearSelectionRequest();
+  }, [selectionRequest, clearSelectionRequest, onSelectNode]);
 
   // Pulse hot-node shadow opacity at 20fps for visual emphasis.
   useEffect(() => {

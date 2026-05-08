@@ -10,6 +10,10 @@ vi.mock("cytoscape", () => {
     json: vi.fn(),
     layout: vi.fn(() => ({ run: vi.fn() })),
     destroy: vi.fn(),
+    getElementById: vi.fn(() => ({ length: 0 })),
+    center: vi.fn(),
+    animate: vi.fn(),
+    nodes: vi.fn(() => ({ style: vi.fn() })),
   };
   return { default: vi.fn(() => fakeCy) };
 });
@@ -26,6 +30,9 @@ const fakeContext = {
   gateItems: [],
   hotspots: [],
   refresh: vi.fn(),
+  selectionRequest: null,
+  requestSelect: vi.fn(),
+  clearSelectionRequest: vi.fn(),
 };
 
 describe("GraphCanvas", () => {
