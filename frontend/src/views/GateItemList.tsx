@@ -10,10 +10,21 @@ export default function GateItemList() {
     id: string;
     decision: GateDecision;
   } | null>(null);
+  const [resolving, setResolving] = useState<Set<string>>(new Set());
 
   async function quickResolve(id: string, decision: GateDecision) {
-    await api.resolveGateItem(id, decision, "");
-    await refresh();
+    if (resolving.has(id)) return;
+    setResolving((s) => new Set(s).add(id));
+    try {
+      await api.resolveGateItem(id, decision, "");
+      await refresh();
+    } finally {
+      setResolving((s) => {
+        const next = new Set(s);
+        next.delete(id);
+        return next;
+      });
+    }
   }
 
   return (
@@ -34,13 +45,15 @@ export default function GateItemList() {
           <div className="flex gap-1 text-xs">
             <button
               onClick={() => quickResolve(g.id, "approved")}
-              className="rounded border border-green-500 px-2 py-0.5 text-green-400"
+              disabled={resolving.has(g.id)}
+              className="rounded border border-green-500 px-2 py-0.5 text-green-400 disabled:opacity-50"
             >
               approve
             </button>
             <button
               onClick={() => quickResolve(g.id, "vetoed")}
-              className="rounded border border-red-500 px-2 py-0.5 text-red-400"
+              disabled={resolving.has(g.id)}
+              className="rounded border border-red-500 px-2 py-0.5 text-red-400 disabled:opacity-50"
             >
               veto
             </button>
@@ -48,7 +61,8 @@ export default function GateItemList() {
               onClick={() =>
                 setPendingDecision({ id: g.id, decision: "resteered" })
               }
-              className="rounded border border-gray-500 px-2 py-0.5 text-gray-300"
+              disabled={resolving.has(g.id)}
+              className="rounded border border-gray-500 px-2 py-0.5 text-gray-300 disabled:opacity-50"
             >
               resteer
             </button>
