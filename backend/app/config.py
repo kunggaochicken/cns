@@ -33,12 +33,19 @@ class GigaFlowConfig(BaseModel):
     poll_interval_minutes: int = 60
 
 
+class AgentsConfig(BaseModel):
+    yaml_path: str = "./agents.yaml"
+    vault_path: str = "./vault"
+    repo_path: str | None = None
+
+
 class GigaBrainConfig(BaseModel):
     db: DBConfig = DBConfig()
     embeddings: EmbeddingsConfig = EmbeddingsConfig()
     llm: LLMConfig = LLMConfig()
     telemetry: TelemetryConfig = TelemetryConfig()
     gigaflow: GigaFlowConfig = GigaFlowConfig()
+    agents: AgentsConfig = AgentsConfig()
 
 
 def load_config(path: Path | str) -> GigaBrainConfig:

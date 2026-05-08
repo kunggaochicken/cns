@@ -19,3 +19,8 @@ gigaflow:
   enabled: false
   manifest_url: null
   poll_interval_minutes: 60
+
+agents:
+  yaml_path: ./agents.yaml
+  vault_path: ./vault
+  repo_path: null

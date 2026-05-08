@@ -1026,6 +1026,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "anthropic" },
+    { name = "click" },
     { name = "fastapi" },
     { name = "httpx" },
     { name = "kuzu" },
@@ -1035,7 +1036,6 @@ dependencies = [
     { name = "opentelemetry-sdk" },
     { name = "pydantic" },
     { name = "pydantic-ai" },
-    { name = "pydantic-settings" },
     { name = "pyyaml" },
     { name = "sqlite-vec" },
     { name = "uvicorn", extra = ["standard"] },
@@ -1053,6 +1053,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "anthropic", specifier = ">=0.61.0" },
+    { name = "click", specifier = ">=8.1" },
     { name = "fastapi", specifier = ">=0.110" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.27" },
@@ -1063,7 +1064,6 @@ requires-dist = [
     { name = "opentelemetry-sdk", specifier = ">=1.24" },
     { name = "pydantic", specifier = ">=2.6" },
     { name = "pydantic-ai", specifier = ">=1.0.0" },
-    { name = "pydantic-settings", specifier = ">=2.2" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.1" },

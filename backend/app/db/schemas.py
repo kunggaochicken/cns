@@ -138,6 +138,7 @@ class AgentNode(_BaseNode):
     state: str = "idle"  # idle | working | paused | escalated
     current_firing: str | None = None
     last_active: datetime | None = None
+    enabled: bool = True
 
 
 class EdgeRecord(BaseModel):
