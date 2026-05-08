@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -8,11 +8,27 @@ from app.sparring.llm import SparringEdge, SparringResult, SuggestedAction
 from app.sparring.router import route_sparring_result
 
 
+def _make_conn_mock(known_ids: set[str]):
+    """Return a KuzuConnection mock whose .query() resolves known node IDs as Bet."""
+    conn = MagicMock()
+
+    def _query(cypher, params=None):
+        node_id = (params or {}).get("id", "")
+        # Pretend the node lives in the Bet table if its ID is in known_ids
+        if node_id in known_ids:
+            return [{"id": node_id}]
+        return []
+
+    conn.query.side_effect = _query
+    return conn
+
+
 @pytest.mark.asyncio
 async def test_clear_actionable_emits_fire_neuron():
     nodes = AsyncMock()
     edges = AsyncMock()
     bus = AsyncMock()
+    conn = _make_conn_mock({"b_1"})
     result = SparringResult(
         classification="clear",
         reasoning="aligns with engineer queue",
@@ -29,6 +45,7 @@ async def test_clear_actionable_emits_fire_neuron():
         nodes=nodes,
         edges=edges,
         bus=bus,
+        conn=conn,
     )
     bus.publish.assert_called_once()
     published = bus.publish.call_args.args[0]
@@ -41,6 +58,7 @@ async def test_conflict_creates_gate_item():
     nodes = AsyncMock()
     edges = AsyncMock()
     bus = AsyncMock()
+    conn = _make_conn_mock({"b_auth"})
     result = SparringResult(
         classification="conflict",
         reasoning="contradicts b_auth_pivot",
@@ -54,6 +72,7 @@ async def test_conflict_creates_gate_item():
         nodes=nodes,
         edges=edges,
         bus=bus,
+        conn=conn,
     )
     nodes.create.assert_called()
     created_node = nodes.create.call_args.args[0]
