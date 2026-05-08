@@ -41,3 +41,33 @@ async def test_stream_emits_graph_changed_events():
     full = "".join(chunks)
     assert "node_created" in full
     assert "t_1" in full
+
+
+@pytest.mark.asyncio
+async def test_generator_aclose_unsubscribes_handlers():
+    """After aclose(), the three handlers must be removed from bus._subscribers.
+
+    The generator must be started (advanced at least once) before aclose() so
+    that the try/finally inside the generator body is entered — Python's async
+    generator protocol skips the body entirely if the generator was never
+    iterated.
+    """
+    bus = EventBus()
+    _queue, generator = make_event_generator(bus)
+
+    # Confirm handlers were subscribed
+    assert len(bus._subscribers.get("graph.changed", [])) == 1
+    assert len(bus._subscribers.get("gate.created", [])) == 1
+    assert len(bus._subscribers.get("fire.neuron", [])) == 1
+
+    # Advance past the initial keepalive so the generator body is entered and
+    # the try/finally is active.
+    first_chunk = await generator.__anext__()
+    assert "keepalive" in first_chunk
+
+    await generator.aclose()
+
+    # All three handlers must be gone
+    assert len(bus._subscribers.get("graph.changed", [])) == 0
+    assert len(bus._subscribers.get("gate.created", [])) == 0
+    assert len(bus._subscribers.get("fire.neuron", [])) == 0

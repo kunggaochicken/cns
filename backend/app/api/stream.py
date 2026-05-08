@@ -32,19 +32,24 @@ def make_event_generator(bus: EventBus) -> tuple[asyncio.Queue, object]:
     async def _generator():
         # Send an initial keepalive comment immediately so the HTTP response
         # starts flowing and the event loop can interleave the producer task.
-        yield ": keepalive\n\n"
-        while True:
-            try:
-                event = await asyncio.wait_for(queue.get(), timeout=0.1)
-            except asyncio.TimeoutError:
-                # Yield periodically to keep the connection alive and give
-                # the event loop a chance to run other tasks.
-                yield ": keepalive\n\n"
-                continue
-            except asyncio.CancelledError:
-                return
-            payload = event.model_dump() if hasattr(event, "model_dump") else event
-            yield f"data: {json.dumps(payload, default=str)}\n\n"
+        try:
+            yield ": keepalive\n\n"
+            while True:
+                try:
+                    event = await asyncio.wait_for(queue.get(), timeout=0.1)
+                except asyncio.TimeoutError:
+                    # Yield periodically to keep the connection alive and give
+                    # the event loop a chance to run other tasks.
+                    yield ": keepalive\n\n"
+                    continue
+                except asyncio.CancelledError:
+                    return
+                payload = event.model_dump() if hasattr(event, "model_dump") else event
+                yield f"data: {json.dumps(payload, default=str)}\n\n"
+        finally:
+            bus.unsubscribe("graph.changed", handler)
+            bus.unsubscribe("gate.created", handler)
+            bus.unsubscribe("fire.neuron", handler)
 
     return queue, _generator()
 

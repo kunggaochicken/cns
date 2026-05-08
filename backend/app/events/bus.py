@@ -12,6 +12,17 @@ class EventBus:
     ) -> None:
         self._subscribers.setdefault(event_name, []).append(handler)
 
+    def unsubscribe(
+        self, event_name: str, handler: Callable[[Any], Awaitable[None]]
+    ) -> None:
+        handlers = self._subscribers.get(event_name)
+        if not handlers:
+            return
+        try:
+            handlers.remove(handler)
+        except ValueError:
+            pass
+
     async def publish(self, event: Any) -> None:
         name = getattr(event, "event", None)
         if name is None:
