@@ -1026,6 +1026,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "anthropic" },
+    { name = "click" },
     { name = "fastapi" },
     { name = "httpx" },
     { name = "kuzu" },
@@ -1053,6 +1054,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "anthropic", specifier = ">=0.61.0" },
+    { name = "click", specifier = ">=8.1" },
     { name = "fastapi", specifier = ">=0.110" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.27" },
