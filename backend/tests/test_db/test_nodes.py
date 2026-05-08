@@ -55,3 +55,21 @@ def test_create_and_get_agent_firing(conn: KuzuConnection):
     assert fetched["id"] == firing.id
     assert fetched["agent_id"] == "engineer-1"
     assert fetched["trace_id"] == "trace_abc"
+
+
+def test_create_and_get_agent(conn: KuzuConnection):
+    from app.db.schemas import AgentNode
+
+    repo = NodeRepository(conn)
+    agent = AgentNode(
+        id="engineer-1",
+        role="engineer",
+        persona="Drafts code, runs tests.",
+        state="idle",
+        enabled=True,
+    )
+    repo.create(agent)
+    fetched = repo.get(agent.id, "Agent")
+    assert fetched["id"] == "engineer-1"
+    assert fetched["role"] == "engineer"
+    assert fetched["enabled"] is True

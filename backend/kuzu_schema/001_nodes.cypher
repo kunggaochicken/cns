@@ -69,5 +69,6 @@ CREATE NODE TABLE IF NOT EXISTS GateItem(
 CREATE NODE TABLE IF NOT EXISTS Agent(
   id STRING, role STRING, persona STRING, state STRING,
   current_firing STRING, last_active TIMESTAMP,
+  created_at TIMESTAMP, enabled BOOL, embedding_id STRING,
   PRIMARY KEY (id)
 );

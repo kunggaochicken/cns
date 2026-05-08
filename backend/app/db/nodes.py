@@ -43,10 +43,7 @@ _FIELD_REMAP: dict[type, dict[str, str]] = {
 # Fields that exist in the Pydantic model but have no corresponding column in
 # the Kuzu table (beyond the universal `node_type` exclusion).
 _EXTRA_EXCLUDE: dict[type, set[str]] = {
-    # Agent table has no created_at column at all
-    AgentNode: {"created_at"},
-    # AgentFiring uses started_at/completed_at instead of created_at
-    AgentFiringNode: {"created_at"},
+    AgentFiringNode: {"created_at"},  # uses started_at/completed_at instead
 }
 
 
