@@ -60,3 +60,27 @@ def test_resolve_invalid_decision_returns_422(configured_app):
         json={"decision": "maybe", "reasoning": "?"},
     )
     assert resp.status_code == 422
+
+
+def test_resolve_missing_gate_item_returns_404(configured_app):
+    client = TestClient(configured_app["app"])
+    resp = client.post(
+        "/gate-items/missing-id/resolve",
+        json={"decision": "approved", "reasoning": "ok"},
+    )
+    assert resp.status_code == 404
+
+
+def test_resolve_already_resolved_returns_409(configured_app):
+    g1 = configured_app["g1"]
+    client = TestClient(configured_app["app"])
+    first = client.post(
+        f"/gate-items/{g1.id}/resolve",
+        json={"decision": "approved", "reasoning": "first"},
+    )
+    assert first.status_code == 200
+    second = client.post(
+        f"/gate-items/{g1.id}/resolve",
+        json={"decision": "vetoed", "reasoning": "second"},
+    )
+    assert second.status_code == 409

@@ -123,7 +123,7 @@ class GateItemNode(_BaseNode):
     node_type: Literal[NodeType.GATE_ITEM] = NodeType.GATE_ITEM
     id: str = Field(default_factory=lambda: _gen_id("g"))
     prompt: str
-    urgency: str = "medium"  # urgent | medium | novel
+    urgency: str = "medium"  # urgent | high | medium | novel | low
     resolved_at: datetime | None = None
     decision: str | None = None  # approved | vetoed | resteered
     reasoning: str = ""
