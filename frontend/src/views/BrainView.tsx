@@ -3,6 +3,7 @@ import TopBar from "./TopBar";
 import GraphCanvas from "./GraphCanvas";
 import NodeDetail from "./NodeDetail";
 import CaptureBar from "./CaptureBar";
+import GateItemList from "./GateItemList";
 import type { NodeType } from "@/api/types";
 
 export default function BrainView() {
@@ -14,7 +15,9 @@ export default function BrainView() {
         <main className="flex-1">
           <GraphCanvas onSelectNode={(table, id) => setSelected({ table, id })} />
         </main>
-        <aside className="w-80 overflow-y-auto border-l border-gray-800 bg-gray-900 p-4">
+        <aside className="flex w-80 flex-col gap-4 overflow-y-auto border-l border-gray-800 bg-gray-900 p-4">
+          <GateItemList />
+          <hr className="border-gray-800" />
           <NodeDetail
             table={selected?.table ?? null}
             nodeId={selected?.id ?? null}
