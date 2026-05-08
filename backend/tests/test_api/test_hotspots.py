@@ -102,8 +102,8 @@ def test_hotspots_excludes_edges_outside_time_window(tmp_path):
     # within_hours=168 (= 7 days) should INCLUDE the 5-day-old edge
     resp2 = client.get("/hotspots?within_hours=168&limit=10")
     body2 = resp2.json()
-    assert any(
-        r["id"] == bet.id for r in body2
-    ), "5-day-old edge should be visible within a 7-day window"
+    assert any(r["id"] == bet.id for r in body2), (
+        "5-day-old edge should be visible within a 7-day window"
+    )
 
     conn.close()
