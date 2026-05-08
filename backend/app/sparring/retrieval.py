@@ -24,13 +24,18 @@ def retrieve_context(
     depth: int,
     vec: VectorStore,
     conn: KuzuConnection,
+    exclude_ids: frozenset[str] = frozenset(),
 ) -> dict:
     """Pull top_k vector matches, then expand graph neighborhood by `depth` hops.
 
     Returns: {"nodes": [{"id", "table"}, ...], "edges": [{"from_id", "to_id", "edge_type"}, ...]}
+
+    ``exclude_ids`` — node IDs to strip from the result set and BFS frontier.
+    Pass the ID of the thought being processed so it cannot appear as its own
+    context (e.g. when the vector store already contains the new thought).
     """
     matches = vec.search(query_embedding, top_k=top_k)
-    seed_ids = {m["id"] for m in matches}
+    seed_ids = {m["id"] for m in matches if m["id"] not in exclude_ids}
 
     # Locate which Kuzu table each seed lives in by querying each table
     seed_nodes: list[dict] = []
@@ -50,7 +55,8 @@ def retrieve_context(
             )
 
     # Expand neighborhood via BFS over REL edges
-    visited_ids = set(seed_ids)
+    # Seed visited_ids with exclude_ids so we never expand from an excluded node
+    visited_ids = set(seed_ids) | set(exclude_ids)
     frontier = list(seed_ids)
     expanded_nodes: list[dict] = list(seed_nodes)
     expanded_edges: list[dict] = []

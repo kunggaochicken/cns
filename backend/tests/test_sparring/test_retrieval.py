@@ -59,3 +59,25 @@ def test_retrieve_pulls_top_k_and_neighbors(stack):
     seed_node = next(n for n in result["nodes"] if n["id"] == bet.id)
     assert "summary" in seed_node
     assert "Auth pivot" in seed_node["summary"]  # title is in Bet summary
+
+
+def test_retrieve_excludes_specified_ids(stack):
+    nodes, vec = stack["nodes"], stack["vec"]
+    bet1 = BetNode(slug="a", title="A", vault_path="x.md", owner="cto")
+    bet2 = BetNode(slug="b", title="B", vault_path="y.md", owner="cto")
+    nodes.create(bet1)
+    nodes.create(bet2)
+    vec.upsert(bet1.id, [1.0, 0.0, 0.0, 0.0])
+    vec.upsert(bet2.id, [0.95, 0.05, 0.0, 0.0])
+
+    result = retrieve_context(
+        query_embedding=[1.0, 0.0, 0.0, 0.0],
+        top_k=2,
+        depth=0,
+        vec=vec,
+        conn=stack["conn"],
+        exclude_ids=frozenset({bet1.id}),
+    )
+    ids = {n["id"] for n in result["nodes"]}
+    assert bet1.id not in ids
+    assert bet2.id in ids

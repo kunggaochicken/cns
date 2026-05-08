@@ -48,6 +48,7 @@ class SparringEngine:
                 depth=self.depth,
                 vec=self.vec,
                 conn=self.nodes.conn,
+                exclude_ids=frozenset({event.thought_id}),
             )
             result = await run_spar(
                 cfg=self.cfg,
@@ -60,6 +61,7 @@ class SparringEngine:
                 nodes=self.nodes,
                 edges=self.edges,
                 bus=self.bus,
+                conn=self.nodes.conn,
             )
         except Exception:
             log.exception("Sparring failed for thought %s", event.thought_id)
