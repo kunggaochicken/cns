@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
+from app.db.edges import EdgeRepository
 from app.db.kuzu import KuzuConnection
 
 _VALID_TABLES = {
@@ -18,7 +19,7 @@ _VALID_TABLES = {
 }
 
 
-def build_nodes_router(*, conn: KuzuConnection) -> APIRouter:
+def build_nodes_router(*, conn: KuzuConnection, edges: EdgeRepository) -> APIRouter:
     router = APIRouter()
 
     @router.get("/nodes/{table}/{node_id}")
@@ -33,18 +34,8 @@ def build_nodes_router(*, conn: KuzuConnection) -> APIRouter:
             raise HTTPException(status_code=404, detail=f"{table}/{node_id} not found")
         node = rows[0]["n"] if isinstance(rows[0].get("n"), dict) else rows[0]
 
-        outgoing = conn.query(
-            f"MATCH (a:{table})-[r:REL]->(b) WHERE a.id = $id "
-            "RETURN r.edge_type AS edge_type, b.id AS to_id, "
-            "r.confidence AS confidence",
-            {"id": node_id},
-        )
-        incoming = conn.query(
-            f"MATCH (a)-[r:REL]->(b:{table}) WHERE b.id = $id "
-            "RETURN r.edge_type AS edge_type, a.id AS from_id, "
-            "r.confidence AS confidence",
-            {"id": node_id},
-        )
+        outgoing = edges.list_outgoing(node_id, table)
+        incoming = edges.list_incoming(node_id, table)
         return {
             "id": node_id,
             "type": table,

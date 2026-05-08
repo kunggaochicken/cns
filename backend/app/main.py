@@ -99,7 +99,7 @@ async def lifespan(app: FastAPI):
 
     app.include_router(build_agents_router(registry=registry, conn=conn))
     app.include_router(build_graph_router(conn=conn))
-    app.include_router(build_nodes_router(conn=conn))
+    app.include_router(build_nodes_router(conn=conn, edges=edges))
 
     yield
 

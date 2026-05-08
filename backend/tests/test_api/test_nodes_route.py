@@ -32,7 +32,7 @@ def configured_app(tmp_path: Path):
         )
     )
     app = FastAPI()
-    app.include_router(build_nodes_router(conn=conn))
+    app.include_router(build_nodes_router(conn=conn, edges=edges))
     yield {"app": app, "bet": bet, "thought": thought}
     conn.close()
 
@@ -48,9 +48,17 @@ def test_get_node_returns_props_and_edges(configured_app):
     assert body["props"]["title"] == "Auth"
     # Incoming sparred-against edge from the thought
     assert any(e["edge_type"] == "sparred-against" for e in body["incoming_edges"])
+    incoming = body["incoming_edges"][0]
+    assert set(incoming.keys()) >= {"edge_type", "from_id", "confidence", "created_at"}
 
 
 def test_get_unknown_node_returns_404(configured_app):
     client = TestClient(configured_app["app"])
     resp = client.get("/nodes/Bet/missing")
     assert resp.status_code == 404
+
+
+def test_get_node_with_unknown_table_returns_400(configured_app):
+    client = TestClient(configured_app["app"])
+    resp = client.get("/nodes/Bogus/abc")
+    assert resp.status_code == 400
