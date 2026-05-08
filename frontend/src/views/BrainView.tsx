@@ -1,15 +1,19 @@
+import { useState } from "react";
 import TopBar from "./TopBar";
+import GraphCanvas from "./GraphCanvas";
+import type { NodeType } from "@/api/types";
 
 export default function BrainView() {
+  const [selected, setSelected] = useState<{ table: NodeType; id: string } | null>(null);
   return (
     <div className="flex h-screen flex-col bg-gray-950">
       <TopBar />
       <div className="flex flex-1 overflow-hidden">
-        <main className="flex-1 bg-gray-950 p-4 text-gray-500">
-          (graph canvas placeholder — Task 11)
+        <main className="flex-1">
+          <GraphCanvas onSelectNode={(table, id) => setSelected({ table, id })} />
         </main>
-        <aside className="w-80 border-l border-gray-800 bg-gray-900 p-4 text-gray-500">
-          (node detail placeholder — Task 12)
+        <aside className="w-80 border-l border-gray-800 bg-gray-900 p-4 text-gray-300 text-xs">
+          {selected ? `${selected.table} ${selected.id}` : "(select a node)"}
         </aside>
       </div>
       <div className="border-t border-gray-800 bg-gray-900 p-2 text-gray-500">
