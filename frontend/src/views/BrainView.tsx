@@ -2,6 +2,7 @@ import { useState } from "react";
 import TopBar from "./TopBar";
 import GraphCanvas from "./GraphCanvas";
 import NodeDetail from "./NodeDetail";
+import CaptureBar from "./CaptureBar";
 import type { NodeType } from "@/api/types";
 
 export default function BrainView() {
@@ -20,9 +21,7 @@ export default function BrainView() {
           />
         </aside>
       </div>
-      <div className="border-t border-gray-800 bg-gray-900 p-2 text-gray-500">
-        (capture bar placeholder — Task 15)
-      </div>
+      <CaptureBar />
     </div>
   );
 }
