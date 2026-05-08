@@ -7,7 +7,9 @@ class EventBus:
     def __init__(self):
         self._subscribers: dict[str, list[Callable[[Any], Awaitable[None]]]] = {}
 
-    def subscribe(self, event_name: str, handler: Callable[[Any], Awaitable[None]]) -> None:
+    def subscribe(
+        self, event_name: str, handler: Callable[[Any], Awaitable[None]]
+    ) -> None:
         self._subscribers.setdefault(event_name, []).append(handler)
 
     async def publish(self, event: Any) -> None:

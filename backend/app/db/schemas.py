@@ -4,7 +4,9 @@ from typing import Annotated, Literal
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
-from pydantic import Field as PydField  # alias used for discriminated-union Annotated metadata
+from pydantic import (
+    Field as PydField,
+)  # alias used for discriminated-union Annotated metadata
 
 
 def _gen_id(prefix: str) -> str:
