@@ -107,6 +107,14 @@ async def lifespan(app: FastAPI):
     app.include_router(build_hotspots_router(conn=conn))
     app.include_router(build_search_router(conn=conn, vec=vec, embedder=embedder))
 
+    from fastapi.staticfiles import StaticFiles
+
+    frontend_dist = Path(__file__).parents[2] / "frontend" / "dist"
+    if frontend_dist.exists():
+        app.mount(
+            "/", StaticFiles(directory=str(frontend_dist), html=True), name="frontend"
+        )
+
     yield
 
     vec.close()
