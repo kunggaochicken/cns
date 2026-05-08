@@ -6,6 +6,7 @@ from fastapi import FastAPI
 
 from app.api import health
 from app.api.graph import build_graph_router
+from app.api.nodes import build_nodes_router
 from app.api.stream import build_stream_router
 from app.capture.api import build_capture_router
 from app.config import GigaBrainConfig, load_config
@@ -98,6 +99,7 @@ async def lifespan(app: FastAPI):
 
     app.include_router(build_agents_router(registry=registry, conn=conn))
     app.include_router(build_graph_router(conn=conn))
+    app.include_router(build_nodes_router(conn=conn))
 
     yield
 
