@@ -104,6 +104,19 @@ export default function GraphCanvas({ onSelectNode }: Props) {
     cy.layout({ name: "cose", animate: false }).run();
   }, [nodes, edges, hotspots, gateItems]);
 
+  // Pulse hot-node shadow opacity at 20fps for visual emphasis.
+  useEffect(() => {
+    const cy = cyRef.current;
+    if (!cy) return;
+    let phase = 0;
+    const id = window.setInterval(() => {
+      phase = (phase + 1) % 60;
+      const factor = 0.7 + 0.3 * Math.abs(Math.sin((phase / 60) * Math.PI * 2));
+      cy.nodes("[?hot]").style({ "shadow-opacity": factor } as Record<string, unknown>);
+    }, 50);
+    return () => window.clearInterval(id);
+  }, []);
+
   return (
     <div
       ref={hostRef}

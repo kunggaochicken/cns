@@ -7,3 +7,12 @@ html, body, #root {
   margin: 0;
   font-family: ui-sans-serif, system-ui, sans-serif;
 }
+
+@keyframes hot-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.cy-hot-overlay {
+  animation: hot-pulse 1.5s ease-in-out infinite;
+}
