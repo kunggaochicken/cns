@@ -10,3 +10,5 @@ dist/
 venv/
 .DS_Store
 .cns/.agent-hooks/
+.superpowers/
+backend/data/
