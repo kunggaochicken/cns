@@ -9,6 +9,7 @@ from app.api.gate_items import build_gate_items_router
 from app.api.graph import build_graph_router
 from app.api.hotspots import build_hotspots_router
 from app.api.nodes import build_nodes_router
+from app.api.search import build_search_router
 from app.api.stream import build_stream_router
 from app.capture.api import build_capture_router
 from app.config import GigaBrainConfig, load_config
@@ -104,6 +105,7 @@ async def lifespan(app: FastAPI):
     app.include_router(build_nodes_router(conn=conn, edges=edges))
     app.include_router(build_gate_items_router(nodes=nodes, conn=conn, bus=bus))
     app.include_router(build_hotspots_router(conn=conn))
+    app.include_router(build_search_router(conn=conn, vec=vec, embedder=embedder))
 
     yield
 
