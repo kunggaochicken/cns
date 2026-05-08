@@ -38,3 +38,19 @@ async def test_read_missing_file_raises(tmp_path: Path):
     ctx = ToolContext(agent_id="a", firing_id="f", vault_path=str(vault))
     with pytest.raises(FileNotFoundError):
         await tool.run(ctx, path="missing.md")
+
+
+@pytest.mark.asyncio
+async def test_read_rejects_sibling_prefix_traversal(tmp_path: Path):
+    """A path like ../vault-secrets/key resolves to a sibling-prefixed dir
+    that startswith() would accept but is outside the vault."""
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    sibling = tmp_path / "vault-secrets"
+    sibling.mkdir()
+    (sibling / "key").write_text("super secret")
+
+    tool = VaultReadTool()
+    ctx = ToolContext(agent_id="a", firing_id="f", vault_path=str(vault))
+    with pytest.raises(ValueError, match="outside vault"):
+        await tool.run(ctx, path="../vault-secrets/key")

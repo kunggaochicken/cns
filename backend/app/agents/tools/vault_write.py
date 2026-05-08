@@ -9,7 +9,7 @@ class VaultWriteTool(Tool):
     async def run(self, ctx: ToolContext, *, path: str, content: str) -> str:
         vault = Path(ctx.vault_path).resolve()
         target = (vault / path).resolve()
-        if not str(target).startswith(str(vault)):
+        if not target.is_relative_to(vault):
             raise ValueError(f"Path {path!r} resolves outside vault")
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content)
