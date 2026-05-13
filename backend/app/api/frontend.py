@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from fastapi import APIRouter
+from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -15,20 +15,23 @@ def _resolve_dist() -> Path | None:
     return path if path.is_dir() and (path / "index.html").exists() else None
 
 
-def build_frontend_router() -> APIRouter | None:
+def mount_frontend(app: FastAPI) -> bool:
     dist = _resolve_dist()
     if not dist:
-        return None
-
-    router = APIRouter()
+        return False
 
     assets = dist / "assets"
     if assets.is_dir():
-        router.mount("/assets", StaticFiles(directory=str(assets)), name="assets")
+        app.mount("/assets", StaticFiles(directory=str(assets)), name="assets")
 
-    @router.get("/", include_in_schema=False)
-    @router.get("/inbox", include_in_schema=False)
-    async def index():
-        return FileResponse(dist / "index.html")
+    index_path = dist / "index.html"
 
-    return router
+    @app.get("/", include_in_schema=False)
+    async def index_root():
+        return FileResponse(index_path)
+
+    @app.get("/inbox", include_in_schema=False)
+    async def index_inbox():
+        return FileResponse(index_path)
+
+    return True
