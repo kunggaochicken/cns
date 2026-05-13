@@ -4,6 +4,7 @@ import click
 
 from app.agents.config import FleetConfig, load_fleet_config
 from app.agents.registry import AgentRegistry
+from app.cli.capture import capture_cmd
 from app.config import load_config
 from app.db.kuzu import KuzuConnection
 from app.db.nodes import NodeRepository
@@ -49,6 +50,9 @@ def list_agents(config: str):
         enabled = "enabled" if row.get("enabled", True) else "disabled"
         click.echo(f"{row['id']:<10} {row['role']:<10} {state:<8} {enabled}")
     conn.close()
+
+
+cli.add_command(capture_cmd)
 
 
 if __name__ == "__main__":
