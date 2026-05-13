@@ -54,6 +54,14 @@ class Dispatcher:
         run_fn: Callable[[], Awaitable[None]],
         firing_id: str | None = None,
     ) -> None:
+        """Run ``run_fn()`` under role + global concurrency limits.
+
+        Failures from ``run_fn`` are logged and swallowed so siblings complete.
+        Emits ``AgentRunStarted`` before the run and ``AgentRunCompleted`` in
+        the ``finally`` block (with ``outcome="success"`` or ``"failed"``)
+        when a bus is wired. Bus publish errors are also logged and swallowed
+        so they cannot break the failure-isolation contract.
+        """
         fid = firing_id or f"f_{uuid.uuid4().hex[:12]}"
         role_gate = self._role_gate(role)
         async with role_gate:
@@ -65,9 +73,19 @@ class Dispatcher:
                     "started_at": started_at,
                 }
                 if self._bus is not None:
-                    await self._bus.publish(
-                        AgentRunStarted(firing_id=fid, role=role, started_at=started_at)
-                    )
+                    try:
+                        await self._bus.publish(
+                            AgentRunStarted(
+                                firing_id=fid, role=role, started_at=started_at
+                            )
+                        )
+                    except Exception:
+                        log.exception(
+                            "Dispatcher: bus.publish(AgentRunStarted) failed "
+                            "for role=%s firing_id=%s",
+                            role,
+                            fid,
+                        )
                 outcome: str = "success"
                 try:
                     await run_fn()
@@ -82,11 +100,19 @@ class Dispatcher:
                     duration = time.time() - started_at
                     self._inflight.pop(fid, None)
                     if self._bus is not None:
-                        await self._bus.publish(
-                            AgentRunCompleted(
-                                firing_id=fid,
-                                role=role,
-                                outcome=outcome,
-                                duration_seconds=duration,
+                        try:
+                            await self._bus.publish(
+                                AgentRunCompleted(
+                                    firing_id=fid,
+                                    role=role,
+                                    outcome=outcome,
+                                    duration_seconds=duration,
+                                )
                             )
-                        )
+                        except Exception:
+                            log.exception(
+                                "Dispatcher: bus.publish(AgentRunCompleted) "
+                                "failed for role=%s firing_id=%s",
+                                role,
+                                fid,
+                            )
