@@ -8,7 +8,7 @@ def test_capture_posts_thought_to_backend(tmp_path):
 
     cfg_path = tmp_path / "g.yaml"
     cfg_path.write_text(
-        "capture:\n" "  backend_url: http://localhost:9999\n" "  timeout_seconds: 2.0\n"
+        "capture:\n  backend_url: http://localhost:9999\n  timeout_seconds: 2.0\n"
     )
 
     fake_response = MagicMock()

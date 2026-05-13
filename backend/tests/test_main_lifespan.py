@@ -124,9 +124,7 @@ def test_obsidian_watcher_starts_when_enabled(monkeypatch, tmp_path):
 def test_obsidian_watcher_not_started_when_disabled(monkeypatch, tmp_path):
     cfg = tmp_path / "g.yaml"
     cfg.write_text(
-        f"db:\n"
-        f"  kuzu_path: {tmp_path}/k.kuzu\n"
-        f"  vector_path: {tmp_path}/v.sqlite\n"
+        f"db:\n  kuzu_path: {tmp_path}/k.kuzu\n  vector_path: {tmp_path}/v.sqlite\n"
     )
     monkeypatch.setenv("GIGABRAIN_CONFIG", str(cfg))
 
