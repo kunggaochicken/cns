@@ -111,6 +111,19 @@ async def lifespan(app: FastAPI):
 
     app.include_router(build_graph_router(conn))
 
+    from app.api.webhooks.github import build_github_webhook_router
+
+    github_secret = (
+        os.environ.get(cfg.webhooks.github_secret_env)
+        if cfg.webhooks.github_secret_env
+        else None
+    )
+    app.include_router(
+        build_github_webhook_router(
+            nodes=nodes, vec=vec, bus=bus, embedder=embedder, secret=github_secret
+        )
+    )
+
     from app.agents.api import build_agents_router
 
     app.include_router(build_agents_router(registry=registry, conn=conn))
