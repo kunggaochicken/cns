@@ -99,17 +99,18 @@ async def lifespan(app: FastAPI):
 
     app.include_router(build_graph_router(conn))
 
-    from app.api.graph import build_graph_router
+    from app.api.webhooks.linear import build_linear_webhook_router
 
-    app.include_router(build_graph_router(conn))
-
-    from app.api.graph import build_graph_router
-
-    app.include_router(build_graph_router(conn))
-
-    from app.api.graph import build_graph_router
-
-    app.include_router(build_graph_router(conn))
+    linear_secret = (
+        os.environ.get(cfg.webhooks.linear_secret_env)
+        if cfg.webhooks.linear_secret_env
+        else None
+    )
+    app.include_router(
+        build_linear_webhook_router(
+            nodes=nodes, vec=vec, bus=bus, embedder=embedder, secret=linear_secret
+        )
+    )
 
     from app.api.webhooks.github import build_github_webhook_router
 
