@@ -1,6 +1,6 @@
 import type { AnyNode, GraphState } from "./types";
 
-const BASE = "/api";
+const BASE = "";
 
 async function getJSON<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`);
