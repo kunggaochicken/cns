@@ -1,3 +1,4 @@
+import asyncio
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -133,7 +134,31 @@ async def lifespan(app: FastAPI):
 
     mount_frontend(app)
 
+    from app.watchers.obsidian import ObsidianWatcher
+
+    obsidian_cfg = cfg.watchers.obsidian
+    if obsidian_cfg.enabled and Path(cfg.agents.vault_path).exists():
+        watcher = ObsidianWatcher(
+            vault=Path(cfg.agents.vault_path),
+            nodes=nodes,
+            vec=vec,
+            bus=bus,
+            embedder=embedder,
+            debounce_seconds=obsidian_cfg.debounce_seconds,
+            ignore_patterns=obsidian_cfg.ignore_patterns,
+        )
+        app.state.obsidian_watcher_task = asyncio.create_task(watcher.run())
+    else:
+        app.state.obsidian_watcher_task = None
+
     yield
+
+    if app.state.obsidian_watcher_task is not None:
+        app.state.obsidian_watcher_task.cancel()
+        try:
+            await app.state.obsidian_watcher_task
+        except (asyncio.CancelledError, Exception):
+            pass
 
     vec.close()
     conn.close()
