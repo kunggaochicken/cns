@@ -23,8 +23,25 @@ class AgentSpec(BaseModel):
     escalates_to: str | None = None
 
 
+class DispatchConfig(BaseModel):
+    """Bounded-concurrency settings for AgentWorker dispatch."""
+
+    max_parallel: int = 1
+    per_role: dict[str, int] = {}
+
+    @model_validator(mode="after")
+    def _check_positive(self):
+        if self.max_parallel < 1:
+            raise ValueError("dispatch.max_parallel must be >= 1")
+        for role, n in self.per_role.items():
+            if n < 1:
+                raise ValueError(f"dispatch.per_role[{role!r}] must be >= 1, got {n}")
+        return self
+
+
 class FleetConfig(BaseModel):
     agents: list[AgentSpec] = []
+    dispatch: DispatchConfig = DispatchConfig()
 
     @model_validator(mode="after")
     def _check_unique_ids(self):
