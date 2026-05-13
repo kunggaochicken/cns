@@ -99,3 +99,60 @@ async def test_resolve_emits_graph_changed_event(deps):
     assert len(received) == 1
     assert received[0].change_type == "node_updated"
     assert received[0].node_id == gate.id
+
+
+def test_resolve_rejects_alternative_when_approved(deps):
+    gate = GateItemNode(prompt="approve?", urgency="urgent")
+    deps["nodes"].create(gate)
+    client = TestClient(_make_app(deps))
+    response = client.post(
+        f"/gate/{gate.id}/resolve",
+        json={"decision": "approved", "reasoning": "ok", "alternative": "X"},
+    )
+    assert response.status_code == 422
+    assert "alternative" in response.json()["detail"].lower()
+
+
+def test_resolve_rejects_alternative_when_vetoed(deps):
+    gate = GateItemNode(prompt="approve?", urgency="urgent")
+    deps["nodes"].create(gate)
+    client = TestClient(_make_app(deps))
+    response = client.post(
+        f"/gate/{gate.id}/resolve",
+        json={"decision": "vetoed", "reasoning": "nope", "alternative": "X"},
+    )
+    assert response.status_code == 422
+    assert "alternative" in response.json()["detail"].lower()
+
+
+async def test_resolve_resteered_persists_alternative_in_response_and_event(deps):
+    gate = GateItemNode(prompt="approve?", urgency="urgent")
+    deps["nodes"].create(gate)
+
+    received: list[GraphChanged] = []
+
+    async def handler(event: GraphChanged):
+        received.append(event)
+
+    deps["bus"].subscribe("graph.changed", handler)
+
+    app = _make_app(deps)
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post(
+            f"/gate/{gate.id}/resolve",
+            json={
+                "decision": "resteered",
+                "reasoning": "try alt path",
+                "alternative": "X",
+            },
+        )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "ok"
+    assert body["alternative"] == "X"
+
+    await asyncio.sleep(0.05)
+
+    assert len(received) == 1
+    assert received[0].extra == {"alternative": "X"}
