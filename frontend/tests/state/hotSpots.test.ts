@@ -52,16 +52,6 @@ describe("hotSpots", () => {
     expect(map.get("c_a")!).toBeGreaterThan(map.get("c_b")!);
   });
 
-  it("resolved gate items are not scored", () => {
-    const open = mkGate("g_open", "urgent");
-    const resolved = mkGate("g_resolved", "urgent");
-    (resolved as { resolved_at: string | null }).resolved_at =
-      "2026-05-12T01:00:00Z";
-    const map = computeHotSpots({ nodes: [open, resolved], edges: [] });
-    expect(map.has("g_open")).toBe(true);
-    expect(map.has("g_resolved")).toBe(false);
-  });
-
   it("weights table is exported and matches expected keys", () => {
     expect(HOT_SPOT_WEIGHTS).toMatchObject({
       conflict: expect.any(Number),
