@@ -12,3 +12,5 @@ venv/
 .cns/.agent-hooks/
 .superpowers/
 backend/data/
+.env
+.docker-data/

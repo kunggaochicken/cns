@@ -1,0 +1,45 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: gigabrain-ollama
+    restart: unless-stopped
+    volumes:
+      - ollama-models:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 2s
+      retries: 12
+
+  ollama-init:
+    image: ollama/ollama:latest
+    container_name: gigabrain-ollama-init
+    depends_on:
+      ollama:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -c
+      - OLLAMA_HOST=ollama:11434 ollama pull nomic-embed-text
+    restart: "no"
+
+  gigabrain:
+    build: .
+    image: gigabrain:local
+    container_name: gigabrain-app
+    restart: unless-stopped
+    depends_on:
+      ollama-init:
+        condition: service_completed_successfully
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:?ANTHROPIC_API_KEY is required — see .env.example}
+      - LINEAR_WEBHOOK_SECRET=${LINEAR_WEBHOOK_SECRET:-}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET:-}
+    volumes:
+      - gigabrain-data:/data
+    ports:
+      - "8000:8000"
+
+volumes:
+  ollama-models:
+  gigabrain-data:

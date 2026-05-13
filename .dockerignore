@@ -1,0 +1,13 @@
+**/node_modules
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.git
+**/.claude
+**/dist
+**/data
+**/static
+docs/superpowers/plans
+*.log
+.env
+.docker-data
