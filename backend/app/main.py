@@ -8,6 +8,7 @@ from app.api import health
 from app.api.stream import build_stream_router
 from app.capture.api import build_capture_router
 from app.config import GigaBrainConfig, load_config
+from app.gate.api import build_gate_router
 from app.db.edges import EdgeRepository
 from app.db.kuzu import KuzuConnection
 from app.db.nodes import NodeRepository
@@ -92,6 +93,19 @@ async def lifespan(app: FastAPI):
         )
     )
     app.include_router(build_stream_router(bus))
+    app.include_router(build_gate_router(conn, bus))
+
+    from app.api.graph import build_graph_router
+
+    app.include_router(build_graph_router(conn))
+
+    from app.api.graph import build_graph_router
+
+    app.include_router(build_graph_router(conn))
+
+    from app.api.graph import build_graph_router
+
+    app.include_router(build_graph_router(conn))
 
     from app.api.graph import build_graph_router
 

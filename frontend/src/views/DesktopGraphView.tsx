@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect } from "react";
+import { useMemo, useRef, useEffect, useState } from "react";
 import ForceGraph2D from "react-force-graph-2d";
 import type { AnyNode, GraphState } from "../api/types";
 import { NODE_HEX } from "../lib/colors";
@@ -42,24 +42,24 @@ export function DesktopGraphView({
     return { nodes, links };
   }, [state]);
 
-  const dimsRef = useRef({ width: 800, height: 600 });
+  const [dims, setDims] = useState({ width: 800, height: 600 });
   useEffect(() => {
-    if (!containerRef.current) return;
     const el = containerRef.current;
-    const resize = () => {
-      dimsRef.current = { width: el.clientWidth, height: el.clientHeight };
-    };
-    resize();
-    window.addEventListener("resize", resize);
-    return () => window.removeEventListener("resize", resize);
+    if (!el) return;
+    const update = () =>
+      setDims({ width: el.clientWidth, height: el.clientHeight });
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
 
   return (
     <div ref={containerRef} className="flex-1 relative bg-neutral-950">
       <ForceGraph2D
         graphData={graphData}
-        width={dimsRef.current.width}
-        height={dimsRef.current.height}
+        width={dims.width}
+        height={dims.height}
         nodeRelSize={5}
         nodeColor={(n: any) => n.color}
         nodeVal={(n: any) => n.val}
