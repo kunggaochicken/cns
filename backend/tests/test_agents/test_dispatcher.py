@@ -4,6 +4,8 @@ import pytest
 
 from app.agents.config import DispatchConfig
 from app.agents.dispatcher import Dispatcher
+from app.events.bus import EventBus
+from app.events.schemas import AgentRunCompleted, AgentRunStarted
 
 
 @pytest.mark.asyncio
@@ -145,3 +147,50 @@ async def test_dispatcher_inflight_exposes_running_firings():
     release.set()
     await task
     assert disp.in_flight() == []
+
+
+@pytest.mark.asyncio
+async def test_dispatcher_emits_started_and_completed_events():
+    cfg = DispatchConfig(max_parallel=2)
+    bus = EventBus()
+    disp = Dispatcher(cfg=cfg, bus=bus)
+    seen: list = []
+
+    async def on_started(e: AgentRunStarted):
+        seen.append(("started", e.firing_id, e.role))
+
+    async def on_completed(e: AgentRunCompleted):
+        seen.append(("completed", e.firing_id, e.role, e.outcome))
+
+    bus.subscribe("agent.run.started", on_started)
+    bus.subscribe("agent.run.completed", on_completed)
+
+    async def ok():
+        await asyncio.sleep(0)
+
+    await disp.dispatch(role="engineer", run_fn=ok, firing_id="fid-A")
+    await asyncio.sleep(0.01)  # let bus tasks drain
+
+    assert ("started", "fid-A", "engineer") in seen
+    assert any(s == ("completed", "fid-A", "engineer", "success") for s in seen)
+
+
+@pytest.mark.asyncio
+async def test_dispatcher_emits_completed_with_failed_outcome_on_exception():
+    cfg = DispatchConfig(max_parallel=2)
+    bus = EventBus()
+    disp = Dispatcher(cfg=cfg, bus=bus)
+    outcomes: list = []
+
+    async def on_completed(e: AgentRunCompleted):
+        outcomes.append(e.outcome)
+
+    bus.subscribe("agent.run.completed", on_completed)
+
+    async def boom():
+        raise RuntimeError("x")
+
+    await disp.dispatch(role="cto", run_fn=boom, firing_id="fid-B")
+    await asyncio.sleep(0.01)
+
+    assert outcomes == ["failed"]
