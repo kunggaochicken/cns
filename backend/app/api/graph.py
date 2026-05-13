@@ -1,6 +1,11 @@
+import json
+import logging
+
 from fastapi import APIRouter, HTTPException
 
 from app.db.kuzu import KuzuConnection
+
+_logger = logging.getLogger(__name__)
 
 
 _TABLE_TO_TYPE = {
@@ -35,6 +40,19 @@ def _normalize_node(payload: dict, node_type: str) -> dict:
     ):
         if ts in out and out[ts] is not None and not isinstance(out[ts], str):
             out[ts] = out[ts].isoformat()
+    if node_type == "thought":
+        raw_meta = out.get("metadata")
+        if isinstance(raw_meta, str):
+            try:
+                out["metadata"] = json.loads(raw_meta)
+            except json.JSONDecodeError:
+                _logger.warning(
+                    "thought %s has invalid metadata JSON; defaulting to {}",
+                    out.get("id"),
+                )
+                out["metadata"] = {}
+        elif not raw_meta:
+            out["metadata"] = {}
     return out
 
 

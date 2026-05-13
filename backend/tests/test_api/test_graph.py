@@ -113,3 +113,29 @@ def test_graph_state_preserves_zero_confidence_edges(tmp_path):
     ]
     assert matching, "expected the zero-confidence edge in /graph/state"
     assert matching[0]["confidence"] == 0.0
+
+
+def test_graph_thought_metadata_deserializes_to_dict(tmp_path):
+    conn = KuzuConnection(str(tmp_path / "t.kuzu"))
+    conn.connect()
+    schema_dir = Path(__file__).parents[2] / "kuzu_schema"
+    conn.bootstrap_schema(schema_dir)
+    nodes = NodeRepository(conn)
+
+    thought = ThoughtNode(content="meta", source="web", metadata={"k": "v"})
+    nodes.create(thought)
+
+    app = FastAPI()
+    app.include_router(build_graph_router(conn))
+    client = TestClient(app)
+
+    state = client.get("/graph/state").json()
+    payload = next(n for n in state["nodes"] if n.get("id") == thought.id)
+    assert isinstance(payload["metadata"], dict)
+    assert payload["metadata"] == {"k": "v"}
+
+    detail = client.get(f"/graph/nodes/{thought.id}").json()
+    assert isinstance(detail["metadata"], dict)
+    assert detail["metadata"] == {"k": "v"}
+
+    conn.close()
