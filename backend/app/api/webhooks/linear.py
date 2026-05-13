@@ -53,7 +53,7 @@ def build_linear_webhook_router(
 
         title = data.get("title") or ""
         description = data.get("description") or ""
-        content = f"[Linear {action}] {data.get('identifier','?')}: {title}\n\n{description}".strip()
+        content = f"[Linear {action}] {data.get('identifier', '?')}: {title}\n\n{description}".strip()
 
         metadata = {
             "linear_id": data.get("id"),

@@ -91,3 +91,45 @@ def test_github_webhook_mounted_when_secret_env_set(monkeypatch, tmp_path):
             "/webhooks/github", content=b"{}", headers={"x-github-event": "ping"}
         )
         assert r.status_code == 401
+
+
+def test_obsidian_watcher_starts_when_enabled(monkeypatch, tmp_path):
+    vault = tmp_path / "vault"
+    vault.mkdir()
+
+    cfg = tmp_path / "g.yaml"
+    cfg.write_text(
+        f"db:\n"
+        f"  kuzu_path: {tmp_path}/k.kuzu\n"
+        f"  vector_path: {tmp_path}/v.sqlite\n"
+        f"agents:\n"
+        f"  vault_path: {vault}\n"
+        f"watchers:\n"
+        f"  obsidian:\n"
+        f"    enabled: true\n"
+        f"    debounce_seconds: 0.05\n"
+    )
+    monkeypatch.setenv("GIGABRAIN_CONFIG", str(cfg))
+
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    with TestClient(app):
+        # Watcher task should be registered on app.state.
+        assert hasattr(app.state, "obsidian_watcher_task")
+        assert app.state.obsidian_watcher_task is not None
+        # On teardown, the task should be cancelled cleanly (no warnings).
+
+
+def test_obsidian_watcher_not_started_when_disabled(monkeypatch, tmp_path):
+    cfg = tmp_path / "g.yaml"
+    cfg.write_text(
+        f"db:\n  kuzu_path: {tmp_path}/k.kuzu\n  vector_path: {tmp_path}/v.sqlite\n"
+    )
+    monkeypatch.setenv("GIGABRAIN_CONFIG", str(cfg))
+
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    with TestClient(app):
+        assert getattr(app.state, "obsidian_watcher_task", None) is None

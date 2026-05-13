@@ -66,3 +66,31 @@ def test_capture_and_webhooks_default_when_omitted():
     assert cfg.capture.timeout_seconds == 5.0
     assert cfg.webhooks.linear_secret_env is None
     assert cfg.webhooks.github_secret_env is None
+
+
+def test_loads_watchers_obsidian_section(tmp_path):
+    from app.config import load_config
+
+    cfg_path = tmp_path / "g.yaml"
+    cfg_path.write_text(
+        "watchers:\n"
+        "  obsidian:\n"
+        "    enabled: true\n"
+        "    debounce_seconds: 1.5\n"
+        "    ignore_patterns:\n"
+        "      - .git/*\n"
+        "      - .obsidian/*\n"
+    )
+    cfg = load_config(cfg_path)
+    assert cfg.watchers.obsidian.enabled is True
+    assert cfg.watchers.obsidian.debounce_seconds == 1.5
+    assert cfg.watchers.obsidian.ignore_patterns == [".git/*", ".obsidian/*"]
+
+
+def test_watchers_obsidian_defaults():
+    from app.config import GigaBrainConfig
+
+    cfg = GigaBrainConfig()
+    assert cfg.watchers.obsidian.enabled is False
+    assert cfg.watchers.obsidian.debounce_seconds == 2.0
+    assert ".git/*" in cfg.watchers.obsidian.ignore_patterns
