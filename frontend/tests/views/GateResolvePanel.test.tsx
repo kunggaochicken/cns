@@ -36,7 +36,7 @@ describe("GateResolvePanel", () => {
     await user.type(screen.getByPlaceholderText(/reasoning/i), "looks fine");
     await user.click(screen.getByRole("button", { name: /approve/i }));
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      "/api/gate/g_1/resolve",
+      "/gate/g_1/resolve",
       expect.objectContaining({ method: "POST" }),
     );
     const body = JSON.parse((globalThis.fetch as any).mock.calls[0][1].body);
