@@ -18,7 +18,7 @@ describe("CaptureBar", () => {
     const input = screen.getByPlaceholderText(/capture a thought/i);
     await user.type(input, "build the brain view{Enter}");
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      "/api/capture",
+      "/capture",
       expect.objectContaining({ method: "POST" }),
     );
     const callBody = JSON.parse((globalThis.fetch as any).mock.calls[0][1].body);
