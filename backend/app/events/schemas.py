@@ -28,3 +28,4 @@ class GraphChanged(BaseModel):
     change_type: Literal["node_created", "edge_created", "node_updated"]
     node_id: str | None = None
     edge_id: str | None = None
+    extra: dict | None = None
