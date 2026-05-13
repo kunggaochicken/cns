@@ -39,3 +39,30 @@ gigaflow:
 def test_load_config_missing_file_raises(tmp_path: Path):
     with pytest.raises(FileNotFoundError):
         load_config(tmp_path / "missing.yaml")
+
+
+def test_loads_capture_and_webhooks_sections(tmp_path: Path):
+    cfg_path = tmp_path / "g.yaml"
+    cfg_path.write_text(
+        "capture:\n"
+        "  backend_url: http://localhost:8000\n"
+        "  timeout_seconds: 2.5\n"
+        "webhooks:\n"
+        "  linear_secret_env: LINEAR_WEBHOOK_SECRET\n"
+        "  github_secret_env: GITHUB_WEBHOOK_SECRET\n"
+    )
+    cfg = load_config(cfg_path)
+    assert cfg.capture.backend_url == "http://localhost:8000"
+    assert cfg.capture.timeout_seconds == 2.5
+    assert cfg.webhooks.linear_secret_env == "LINEAR_WEBHOOK_SECRET"
+    assert cfg.webhooks.github_secret_env == "GITHUB_WEBHOOK_SECRET"
+
+
+def test_capture_and_webhooks_default_when_omitted():
+    from app.config import GigaBrainConfig
+
+    cfg = GigaBrainConfig()
+    assert cfg.capture.backend_url == "http://localhost:8000"
+    assert cfg.capture.timeout_seconds == 5.0
+    assert cfg.webhooks.linear_secret_env is None
+    assert cfg.webhooks.github_secret_env is None

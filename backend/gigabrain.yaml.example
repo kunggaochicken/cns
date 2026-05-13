@@ -24,3 +24,13 @@ agents:
   yaml_path: ./agents.yaml
   vault_path: ./vault
   repo_path: null
+
+capture:
+  backend_url: http://localhost:8000
+  timeout_seconds: 5.0
+
+webhooks:
+  # Set env var names that hold the HMAC secrets configured in Linear/GitHub.
+  # Leave null to disable the webhook (all requests will be rejected with 401).
+  linear_secret_env: null
+  github_secret_env: null
