@@ -39,6 +39,16 @@ class AgentsConfig(BaseModel):
     repo_path: str | None = None
 
 
+class CaptureClientConfig(BaseModel):
+    backend_url: str = "http://localhost:8000"
+    timeout_seconds: float = 5.0
+
+
+class WebhooksConfig(BaseModel):
+    linear_secret_env: str | None = None
+    github_secret_env: str | None = None
+
+
 class GigaBrainConfig(BaseModel):
     db: DBConfig = DBConfig()
     embeddings: EmbeddingsConfig = EmbeddingsConfig()
@@ -46,6 +56,8 @@ class GigaBrainConfig(BaseModel):
     telemetry: TelemetryConfig = TelemetryConfig()
     gigaflow: GigaFlowConfig = GigaFlowConfig()
     agents: AgentsConfig = AgentsConfig()
+    capture: CaptureClientConfig = CaptureClientConfig()
+    webhooks: WebhooksConfig = WebhooksConfig()
 
 
 def load_config(path: Path | str) -> GigaBrainConfig:
