@@ -68,3 +68,26 @@ def test_linear_webhook_mounted_when_secret_env_set(monkeypatch, tmp_path):
     with TestClient(app) as client:
         r = client.post("/webhooks/linear", content=b"{}")
         assert r.status_code == 401  # mounted but unsigned
+
+
+def test_github_webhook_mounted_when_secret_env_set(monkeypatch, tmp_path):
+    monkeypatch.setenv("GH_WEBHOOK_SECRET", "test-secret")
+
+    cfg = tmp_path / "g.yaml"
+    cfg.write_text(
+        f"db:\n"
+        f"  kuzu_path: {tmp_path}/k.kuzu\n"
+        f"  vector_path: {tmp_path}/v.sqlite\n"
+        f"webhooks:\n"
+        f"  github_secret_env: GH_WEBHOOK_SECRET\n"
+    )
+    monkeypatch.setenv("GIGABRAIN_CONFIG", str(cfg))
+
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    with TestClient(app) as client:
+        r = client.post(
+            "/webhooks/github", content=b"{}", headers={"x-github-event": "ping"}
+        )
+        assert r.status_code == 401
