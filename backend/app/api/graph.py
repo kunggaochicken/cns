@@ -61,6 +61,8 @@ def build_graph_router(conn: KuzuConnection) -> APIRouter:
             created_at = r.get("created_at")
             if created_at is not None and not isinstance(created_at, str):
                 created_at = created_at.isoformat()
+            conf = r.get("confidence")
+            confidence = conf if conf is not None else 1.0
             edges.append(
                 {
                     "from_id": r["from_id"],
@@ -69,7 +71,7 @@ def build_graph_router(conn: KuzuConnection) -> APIRouter:
                     "to_type": None,
                     "edge_type": r.get("edge_type") or "rel",
                     "created_at": created_at,
-                    "confidence": r.get("confidence") or 1.0,
+                    "confidence": confidence,
                 }
             )
         return {"nodes": nodes, "edges": edges}
