@@ -22,6 +22,7 @@ export function computeHotSpots(state: GraphState): Map<string, number> {
       score += HOT_SPOT_WEIGHTS.conflict;
       if (node.severity === "high") score += 1;
     } else if (node.node_type === "gate_item") {
+      if (node.resolved_at !== null) continue;
       if (node.urgency === "urgent") score += HOT_SPOT_WEIGHTS.gate_urgent;
       else if (node.urgency === "medium") score += HOT_SPOT_WEIGHTS.gate_medium;
       else score += HOT_SPOT_WEIGHTS.gate_novel;
