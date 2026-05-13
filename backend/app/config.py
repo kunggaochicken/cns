@@ -49,6 +49,20 @@ class WebhooksConfig(BaseModel):
     github_secret_env: str | None = None
 
 
+class ObsidianWatcherConfig(BaseModel):
+    enabled: bool = False
+    debounce_seconds: float = 2.0
+    ignore_patterns: list[str] = [
+        ".git/*",
+        ".obsidian/*",
+        "*.gigabrain*",
+    ]
+
+
+class WatchersConfig(BaseModel):
+    obsidian: ObsidianWatcherConfig = ObsidianWatcherConfig()
+
+
 class GigaBrainConfig(BaseModel):
     db: DBConfig = DBConfig()
     embeddings: EmbeddingsConfig = EmbeddingsConfig()
@@ -58,6 +72,7 @@ class GigaBrainConfig(BaseModel):
     agents: AgentsConfig = AgentsConfig()
     capture: CaptureClientConfig = CaptureClientConfig()
     webhooks: WebhooksConfig = WebhooksConfig()
+    watchers: WatchersConfig = WatchersConfig()
 
 
 def load_config(path: Path | str) -> GigaBrainConfig:

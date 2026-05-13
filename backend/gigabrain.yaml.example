@@ -34,3 +34,13 @@ webhooks:
   # Leave null to disable the webhook (all requests will be rejected with 401).
   linear_secret_env: null
   github_secret_env: null
+
+watchers:
+  obsidian:
+    # Set enabled: true once agents.vault_path points at a real vault.
+    enabled: false
+    debounce_seconds: 2.0
+    ignore_patterns:
+      - .git/*
+      - .obsidian/*
+      - "*.gigabrain*"
