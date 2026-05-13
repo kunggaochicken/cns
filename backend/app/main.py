@@ -101,6 +101,12 @@ async def lifespan(app: FastAPI):
 
     app.include_router(build_agents_router(registry=registry, conn=conn))
 
+    from app.api.frontend import build_frontend_router
+
+    fe = build_frontend_router()
+    if fe is not None:
+        app.include_router(fe)
+
     yield
 
     vec.close()
