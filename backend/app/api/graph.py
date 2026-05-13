@@ -1,11 +1,6 @@
-import json
-import logging
-
 from fastapi import APIRouter, HTTPException
 
 from app.db.kuzu import KuzuConnection
-
-_logger = logging.getLogger(__name__)
 
 
 _TABLE_TO_TYPE = {
@@ -40,19 +35,6 @@ def _normalize_node(payload: dict, node_type: str) -> dict:
     ):
         if ts in out and out[ts] is not None and not isinstance(out[ts], str):
             out[ts] = out[ts].isoformat()
-    if node_type == "thought":
-        raw_meta = out.get("metadata")
-        if isinstance(raw_meta, str):
-            try:
-                out["metadata"] = json.loads(raw_meta)
-            except json.JSONDecodeError:
-                _logger.warning(
-                    "thought %s has invalid metadata JSON; defaulting to {}",
-                    out.get("id"),
-                )
-                out["metadata"] = {}
-        elif not raw_meta:
-            out["metadata"] = {}
     return out
 
 
@@ -79,8 +61,6 @@ def build_graph_router(conn: KuzuConnection) -> APIRouter:
             created_at = r.get("created_at")
             if created_at is not None and not isinstance(created_at, str):
                 created_at = created_at.isoformat()
-            conf = r.get("confidence")
-            confidence = conf if conf is not None else 1.0
             edges.append(
                 {
                     "from_id": r["from_id"],
@@ -89,7 +69,7 @@ def build_graph_router(conn: KuzuConnection) -> APIRouter:
                     "to_type": None,
                     "edge_type": r.get("edge_type") or "rel",
                     "created_at": created_at,
-                    "confidence": confidence,
+                    "confidence": r.get("confidence") or 1.0,
                 }
             )
         return {"nodes": nodes, "edges": edges}

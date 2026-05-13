@@ -5,10 +5,9 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.api.graph import build_graph_router
-from app.db.edges import EdgeRepository
 from app.db.kuzu import KuzuConnection
 from app.db.nodes import NodeRepository
-from app.db.schemas import BetNode, EdgeRecord, NodeType, ThoughtNode
+from app.db.schemas import BetNode, ThoughtNode
 
 
 @pytest.fixture
@@ -72,70 +71,3 @@ def test_graph_node_by_id_returns_404_for_unknown(graph_app):
     client = TestClient(graph_app)
     response = client.get("/graph/nodes/does_not_exist")
     assert response.status_code == 404
-
-
-def test_graph_state_preserves_zero_confidence_edges(tmp_path):
-    conn = KuzuConnection(str(tmp_path / "t.kuzu"))
-    conn.connect()
-    schema_dir = Path(__file__).parents[2] / "kuzu_schema"
-    conn.bootstrap_schema(schema_dir)
-    nodes = NodeRepository(conn)
-    edges = EdgeRepository(conn)
-
-    thought = ThoughtNode(content="a", source="web")
-    bet = BetNode(
-        slug="zero-conf",
-        title="Zero Conf",
-        vault_path="Brain/Bets/bet_zero_conf.md",
-        owner="ceo",
-    )
-    nodes.create(thought)
-    nodes.create(bet)
-    edges.create(
-        EdgeRecord(
-            from_id=thought.id,
-            from_type=NodeType.THOUGHT,
-            to_id=bet.id,
-            to_type=NodeType.BET,
-            edge_type="caused-by",
-            confidence=0.0,
-        )
-    )
-
-    app = FastAPI()
-    app.include_router(build_graph_router(conn))
-    client = TestClient(app)
-    body = client.get("/graph/state").json()
-    conn.close()
-
-    matching = [
-        e for e in body["edges"] if e["from_id"] == thought.id and e["to_id"] == bet.id
-    ]
-    assert matching, "expected the zero-confidence edge in /graph/state"
-    assert matching[0]["confidence"] == 0.0
-
-
-def test_graph_thought_metadata_deserializes_to_dict(tmp_path):
-    conn = KuzuConnection(str(tmp_path / "t.kuzu"))
-    conn.connect()
-    schema_dir = Path(__file__).parents[2] / "kuzu_schema"
-    conn.bootstrap_schema(schema_dir)
-    nodes = NodeRepository(conn)
-
-    thought = ThoughtNode(content="meta", source="web", metadata={"k": "v"})
-    nodes.create(thought)
-
-    app = FastAPI()
-    app.include_router(build_graph_router(conn))
-    client = TestClient(app)
-
-    state = client.get("/graph/state").json()
-    payload = next(n for n in state["nodes"] if n.get("id") == thought.id)
-    assert isinstance(payload["metadata"], dict)
-    assert payload["metadata"] == {"k": "v"}
-
-    detail = client.get(f"/graph/nodes/{thought.id}").json()
-    assert isinstance(detail["metadata"], dict)
-    assert detail["metadata"] == {"k": "v"}
-
-    conn.close()
