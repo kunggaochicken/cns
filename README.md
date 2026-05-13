@@ -6,6 +6,22 @@ A **delegation console for leaders**. GigaBrain models your work like a company 
 
 GigaBrain is built for whoever leads a team — CEO, manager, tech lead, anyone who delegates to people or agents who can mostly run independently. The leader operates at the **vision and positioning** layer; subordinates handle implementation. The system grows with you: today a flat CEO → C-suite split, eventually a recursive tree (CTO spawns VPs spawns engineers) as load demands. See [CLAUDE.md](CLAUDE.md) for the full mental model.
 
+## Self-hosting (GigaBrain v2 brain — preview)
+
+The CNS v2 brain — graph DB, sparring engine, agent runtime, brain view —
+ships as a docker-compose stack:
+
+```bash
+git clone https://github.com/kunggaochicken/GigaBrain.git
+cd GigaBrain && cp .env.example .env
+# edit .env to set ANTHROPIC_API_KEY
+docker compose up -d
+open http://localhost:8000
+```
+
+See [`docs/self-hosting.md`](docs/self-hosting.md) for the full guide
+(Obsidian vault mount, webhooks, backup, troubleshooting).
+
 ## Obsidian plugin
 
 There's an in-editor surface for the delegation console: a sidebar of pending briefs, open conflicts, and stale bets, plus action bars on bet/brief/conflict files that dispatch agents and walk reviews — all without leaving Obsidian. Distributed via [BRAT](https://github.com/TfTHacker/obsidian42-brat) for v1; install instructions and a settings walkthrough are in [`obsidian-plugin/README.md`](obsidian-plugin/README.md).
