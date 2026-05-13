@@ -79,3 +79,63 @@ def test_capture_non_2xx_exits_nonzero_and_prints_error(tmp_path):
 
     assert result.exit_code != 0
     assert "500" in result.output or "error" in result.output.lower()
+
+
+def test_capture_against_real_capture_router(tmp_path, monkeypatch):
+    """End-to-end: CLI -> in-process FastAPI app -> /capture writes a thought.
+
+    Uses TestClient (which already speaks ASGI) by monkey-patching httpx.post
+    on the CLI module to dispatch through it, so we don't need a network port.
+    """
+    from pathlib import Path
+    from unittest.mock import AsyncMock
+
+    from click.testing import CliRunner
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    from app.capture.api import build_capture_router
+    from app.cli import capture as capture_module
+    from app.cli.agents import cli
+    from app.db.kuzu import KuzuConnection
+    from app.db.nodes import NodeRepository
+    from app.db.vector import VectorStore
+    from app.events.bus import EventBus
+
+    conn = KuzuConnection(str(tmp_path / "t.kuzu"))
+    conn.connect()
+    schema_dir = Path(__file__).parents[2] / "kuzu_schema"
+    conn.bootstrap_schema(schema_dir)
+    nodes = NodeRepository(conn)
+    vec = VectorStore(str(tmp_path / "v.sqlite"), dim=4)
+    vec.connect()
+    embedder = AsyncMock()
+    embedder.embed.return_value = [0.1, 0.2, 0.3, 0.4]
+    embedder.dim = 4
+
+    app = FastAPI()
+    app.include_router(
+        build_capture_router(nodes=nodes, vec=vec, bus=EventBus(), embedder=embedder)
+    )
+
+    test_client = TestClient(app)
+
+    def _post(url, **kwargs):
+        # Rewrite the URL to just the path so TestClient handles it in-process.
+        path = "/" + url.split("://", 1)[1].split("/", 1)[1]
+        # TestClient's post doesn't accept `timeout`; drop it.
+        kwargs.pop("timeout", None)
+        return test_client.post(path, **kwargs)
+
+    monkeypatch.setattr(capture_module.httpx, "post", _post)
+
+    cfg_path = tmp_path / "g.yaml"
+    cfg_path.write_text("capture:\n  backend_url: http://testserver\n")
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["capture", "smoke", "--config", str(cfg_path)])
+    assert result.exit_code == 0, result.output
+    assert "(sparring)" in result.output
+
+    vec.close()
+    conn.close()
