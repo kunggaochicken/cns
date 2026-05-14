@@ -44,6 +44,9 @@ class ThoughtNode(_BaseNode):
     content: str
     source: str  # pwa | voice | web | cli | obsidian | linear | github
     metadata: dict = Field(default_factory=dict)
+    # SHA256 of normalized content; used to dedup re-captures from noisy
+    # sources (Obsidian re-saves the same file repeatedly).
+    content_hash: str = ""
 
 
 class BetNode(_BaseNode):
