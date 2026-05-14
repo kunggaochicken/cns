@@ -28,6 +28,8 @@ def make_event_generator(bus: EventBus) -> tuple[asyncio.Queue, object]:
     bus.subscribe("graph.changed", handler)
     bus.subscribe("gate.created", handler)
     bus.subscribe("fire.neuron", handler)
+    bus.subscribe("agent.run.started", handler)
+    bus.subscribe("agent.run.completed", handler)
 
     async def _generator():
         # Send an initial keepalive comment immediately so the HTTP response
@@ -50,6 +52,8 @@ def make_event_generator(bus: EventBus) -> tuple[asyncio.Queue, object]:
             bus.unsubscribe("graph.changed", handler)
             bus.unsubscribe("gate.created", handler)
             bus.unsubscribe("fire.neuron", handler)
+            bus.unsubscribe("agent.run.started", handler)
+            bus.unsubscribe("agent.run.completed", handler)
 
     return queue, _generator()
 

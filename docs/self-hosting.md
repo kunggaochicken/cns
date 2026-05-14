@@ -116,9 +116,12 @@ dispatch:
 
 Semantics:
 
-- **Per-role serialization:** two firings for the same role never overlap, even
-  when the global cap allows it. This avoids two agents in the same role racing
-  on a shared workspace.
+- **Per-role behavior:** by default, firings for the same role are serialized
+  (never overlap, even when the global cap would allow it) — this avoids two
+  agents in the same role racing on a shared workspace. Use `per_role` to
+  permit limited concurrency within a role (`per_role: {engineer: 2}` allows
+  two engineer agents at once) or to tighten the cap further than the global
+  default would.
 - **Failure isolation:** an agent run raising an exception marks that firing as
   `outcome=failed` in the graph and does not abort sibling runs.
 - **Progress events:** every run emits `agent.run.started` and
