@@ -12,7 +12,7 @@ from app.db.edges import EdgeRepository
 from app.db.nodes import NodeRepository
 from app.db.schemas import AgentFiringNode, EdgeRecord, NodeType
 from app.events.bus import EventBus
-from app.events.schemas import FireNeuron
+from app.events.schemas import FireNeuron, GraphChanged
 from app.telemetry.otel import inject_gigabrain_attrs
 
 log = logging.getLogger(__name__)
@@ -95,6 +95,9 @@ class AgentWorker:
                 )
                 self.nodes.create(firing)
                 inject_gigabrain_attrs(span, firing_id=firing.id)
+                await self.bus.publish(
+                    GraphChanged(change_type="node_created", node_id=firing.id)
+                )
 
                 self.edges.create(
                     EdgeRecord(

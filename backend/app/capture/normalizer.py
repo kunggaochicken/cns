@@ -3,7 +3,7 @@ from app.db.schemas import ThoughtNode
 from app.db.vector import VectorStore
 from app.embeddings.provider import EmbeddingsProvider
 from app.events.bus import EventBus
-from app.events.schemas import ThoughtCreated
+from app.events.schemas import GraphChanged, ThoughtCreated
 
 
 async def normalize_and_persist(
@@ -21,4 +21,5 @@ async def normalize_and_persist(
     nodes.create(thought)
     vec.upsert(thought.id, embedding)
     await bus.publish(ThoughtCreated(thought_id=thought.id, content=content))
+    await bus.publish(GraphChanged(change_type="node_created", node_id=thought.id))
     return thought
