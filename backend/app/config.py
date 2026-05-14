@@ -40,7 +40,7 @@ class AgentsConfig(BaseModel):
 
 
 class CaptureClientConfig(BaseModel):
-    backend_url: str = "http://localhost:8000"
+    backend_url: str = "http://localhost:8001"
     timeout_seconds: float = 5.0
 
 

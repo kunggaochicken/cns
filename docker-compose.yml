@@ -38,7 +38,7 @@ services:
     volumes:
       - gigabrain-data:/data
     ports:
-      - "8000:8000"
+      - "8001:8000"
 
 volumes:
   ollama-models:

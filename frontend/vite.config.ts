@@ -7,10 +7,10 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      "/graph": { target: "http://localhost:8000", changeOrigin: true },
-      "/capture": { target: "http://localhost:8000", changeOrigin: true },
-      "/stream": { target: "http://localhost:8000", changeOrigin: true },
-      "/gate": { target: "http://localhost:8000", changeOrigin: true },
+      "/graph": { target: "http://localhost:8001", changeOrigin: true },
+      "/capture": { target: "http://localhost:8001", changeOrigin: true },
+      "/stream": { target: "http://localhost:8001", changeOrigin: true },
+      "/gate": { target: "http://localhost:8001", changeOrigin: true },
     },
   },
   build: {
