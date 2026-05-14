@@ -29,3 +29,18 @@ class GraphChanged(BaseModel):
     node_id: str | None = None
     edge_id: str | None = None
     extra: dict | None = None
+
+
+class AgentRunStarted(BaseModel):
+    event: Literal["agent.run.started"] = "agent.run.started"
+    firing_id: str
+    role: str
+    started_at: float
+
+
+class AgentRunCompleted(BaseModel):
+    event: Literal["agent.run.completed"] = "agent.run.completed"
+    firing_id: str
+    role: str
+    outcome: Literal["success", "failed"]
+    duration_seconds: float

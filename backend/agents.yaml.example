@@ -57,3 +57,16 @@ agents:
     tools:
       - vault_read
     escalates_to: null
+
+# Optional: bounded-concurrency dispatch (defaults to fully sequential).
+#
+# `max_parallel` caps the total number of concurrent agent runs across all roles.
+# `per_role` tightens individual roles below the global cap — useful when a role's
+# workspace can't tolerate concurrent writers (e.g. two CTO agents racing on the
+# same architecture doc).
+#
+# dispatch:
+#   max_parallel: 3
+#   per_role:
+#     cto: 1
+#     engineer: 2
