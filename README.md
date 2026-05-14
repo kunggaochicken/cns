@@ -20,7 +20,10 @@ open http://localhost:8000
 ```
 
 See [`docs/self-hosting.md`](docs/self-hosting.md) for the full guide
-(Obsidian vault mount, webhooks, backup, troubleshooting).
+(Obsidian vault mount, webhooks, backup, troubleshooting). Once it's
+running, [`docs/dogfooding.md`](docs/dogfooding.md) walks through the
+actual usage loop, known gaps to watch for, and the friction-log
+practice that feeds v0.2 planning.
 
 ## Obsidian plugin
 
