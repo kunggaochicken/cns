@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from app.agents.config import AgentSpec, FleetConfig
+from app.agents.dispatcher import Dispatcher
 from app.agents.registry import AgentRegistry
 from app.agents.runtime import AgentRunResult
 from app.agents.worker import AgentWorker
@@ -45,6 +46,7 @@ async def test_fire_neuron_creates_firing_and_edges(tmp_path: Path, monkeypatch)
     )
     monkeypatch.setattr("app.agents.runtime.AgentRuntime.run", fake_run)
 
+    dispatcher = Dispatcher(cfg=FleetConfig().dispatch, bus=bus)
     worker = AgentWorker(
         registry=AgentRegistry(nodes=nodes, conn=conn),
         nodes=nodes,
@@ -54,6 +56,7 @@ async def test_fire_neuron_creates_firing_and_edges(tmp_path: Path, monkeypatch)
         fleet=fleet,
         vault_path=str(tmp_path / "vault"),
         repo_path=None,
+        dispatcher=dispatcher,
     )
     worker.attach()
 

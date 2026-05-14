@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from app.agents.config import AgentSpec, FleetConfig
+from app.agents.dispatcher import Dispatcher
 from app.agents.registry import AgentRegistry
 from app.agents.runtime import AgentRunResult
 from app.agents.worker import AgentWorker
@@ -54,6 +55,7 @@ async def test_worker_processes_fire_neuron_for_matching_role(stack, monkeypatch
     monkeypatch.setattr("app.agents.runtime.AgentRuntime.__init__", fake_init)
     monkeypatch.setattr("app.agents.runtime.AgentRuntime.run", fake_run)
 
+    dispatcher = Dispatcher(cfg=FleetConfig().dispatch, bus=stack["bus"])
     worker = AgentWorker(
         registry=reg,
         nodes=stack["nodes"],
@@ -63,6 +65,7 @@ async def test_worker_processes_fire_neuron_for_matching_role(stack, monkeypatch
         fleet=FleetConfig(agents=[spec]),
         vault_path=stack["vault"],
         repo_path=stack["repo"],
+        dispatcher=dispatcher,
     )
     worker.attach()
 
@@ -100,6 +103,7 @@ async def test_worker_drops_event_when_no_agent_matches_role(stack, caplog):
             ]
         )
     )
+    dispatcher = Dispatcher(cfg=FleetConfig().dispatch, bus=stack["bus"])
     worker = AgentWorker(
         registry=reg,
         nodes=stack["nodes"],
@@ -109,6 +113,7 @@ async def test_worker_drops_event_when_no_agent_matches_role(stack, caplog):
         fleet=FleetConfig(agents=[AgentSpec(id="eng-1", role="engineer", persona="x")]),
         vault_path=stack["vault"],
         repo_path=stack["repo"],
+        dispatcher=dispatcher,
     )
     worker.attach()
     await stack["bus"].publish(
@@ -142,6 +147,7 @@ async def test_worker_marks_firing_failed_when_agent_run_raises(stack, monkeypat
     monkeypatch.setattr("app.agents.runtime.AgentRuntime.__init__", fake_init)
     monkeypatch.setattr("app.agents.runtime.AgentRuntime.run", boom)
 
+    dispatcher = Dispatcher(cfg=FleetConfig().dispatch, bus=stack["bus"])
     worker = AgentWorker(
         registry=reg,
         nodes=stack["nodes"],
@@ -151,6 +157,7 @@ async def test_worker_marks_firing_failed_when_agent_run_raises(stack, monkeypat
         fleet=FleetConfig(agents=[spec]),
         vault_path=stack["vault"],
         repo_path=stack["repo"],
+        dispatcher=dispatcher,
     )
     worker.attach()
 
@@ -183,6 +190,7 @@ async def test_worker_drops_event_when_agent_is_disabled(stack, monkeypatch):
     spec = AgentSpec(id="eng-1", role="engineer", persona="x", enabled=False)
     reg.sync(FleetConfig(agents=[spec]))
 
+    dispatcher = Dispatcher(cfg=FleetConfig().dispatch, bus=stack["bus"])
     worker = AgentWorker(
         registry=reg,
         nodes=stack["nodes"],
@@ -192,6 +200,7 @@ async def test_worker_drops_event_when_agent_is_disabled(stack, monkeypatch):
         fleet=FleetConfig(agents=[spec]),
         vault_path=stack["vault"],
         repo_path=stack["repo"],
+        dispatcher=dispatcher,
     )
     worker.attach()
 
@@ -220,6 +229,7 @@ async def test_worker_drops_event_when_agent_is_paused(stack, monkeypatch):
         {"id": "eng-1"},
     )
 
+    dispatcher = Dispatcher(cfg=FleetConfig().dispatch, bus=stack["bus"])
     worker = AgentWorker(
         registry=reg,
         nodes=stack["nodes"],
@@ -229,6 +239,7 @@ async def test_worker_drops_event_when_agent_is_paused(stack, monkeypatch):
         fleet=FleetConfig(agents=[spec]),
         vault_path=stack["vault"],
         repo_path=stack["repo"],
+        dispatcher=dispatcher,
     )
     worker.attach()
 

@@ -54,6 +54,7 @@ async def lifespan(app: FastAPI):
     engine.attach()
 
     from app.agents.config import FleetConfig, load_fleet_config
+    from app.agents.dispatcher import Dispatcher
     from app.agents.registry import AgentRegistry
     from app.agents.worker import AgentWorker
 
@@ -61,6 +62,7 @@ async def lifespan(app: FastAPI):
     fleet = load_fleet_config(fleet_path) if fleet_path.exists() else FleetConfig()
     registry = AgentRegistry(nodes=nodes, conn=conn)
     registry.sync(fleet)
+    dispatcher = Dispatcher(cfg=fleet.dispatch, bus=bus)
     worker = AgentWorker(
         registry=registry,
         nodes=nodes,
@@ -70,8 +72,10 @@ async def lifespan(app: FastAPI):
         fleet=fleet,
         vault_path=cfg.agents.vault_path,
         repo_path=cfg.agents.repo_path,
+        dispatcher=dispatcher,
     )
     worker.attach()
+    app.state.dispatcher = dispatcher
     app.state.registry = registry
     app.state.worker = worker
     app.state.fleet = fleet
