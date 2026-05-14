@@ -16,7 +16,7 @@ git clone https://github.com/kunggaochicken/GigaBrain.git
 cd GigaBrain && cp .env.example .env
 # edit .env to set ANTHROPIC_API_KEY
 docker compose up -d
-open http://localhost:8000
+open http://localhost:8001
 ```
 
 See [`docs/self-hosting.md`](docs/self-hosting.md) for the full guide

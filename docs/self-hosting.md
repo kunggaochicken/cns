@@ -22,13 +22,15 @@ docker compose logs -f gigabrain
 ```
 
 First boot takes 2–5 minutes (Ollama pulls the embed model). Once
-`gigabrain-app` says it's listening on `0.0.0.0:8000`, point a browser at
-`http://localhost:8000` for the brain view.
+`gigabrain-app` says it's listening on `0.0.0.0:8000` (the container's
+internal port), point a browser at `http://localhost:8001` for the brain
+view — the host-side port is `8001` (the container's `8000` is mapped to
+the host's `8001` to avoid colliding with other services).
 
 ## First capture
 
 ```bash
-curl -X POST http://localhost:8000/capture \
+curl -X POST http://localhost:8001/capture \
   -H 'content-type: application/json' \
   -d '{"content": "hello brain", "source": "manual"}'
 ```
@@ -58,7 +60,7 @@ You should see the thought appear in the brain view within a second.
 Set `LINEAR_WEBHOOK_SECRET` and/or `GITHUB_WEBHOOK_SECRET` in `.env`, then
 restart the stack. Point Linear at `https://<your-host>/webhooks/linear`
 and GitHub at `https://<your-host>/webhooks/github`. Both require an HTTPS
-reverse proxy in front of the bare 8000 port — use Caddy or Nginx; that's
+reverse proxy in front of the bare 8001 port — use Caddy or Nginx; that's
 out of scope for v0.1.
 
 ## CLI capture from another machine
