@@ -18,7 +18,7 @@ export function NodeDetailPanel({
   const title = headline(node);
 
   return (
-    <aside className="w-96 h-full bg-neutral-900 border-l border-neutral-800 overflow-y-auto">
+    <aside className="w-96 shrink-0 h-full bg-neutral-900 border-l border-neutral-800 overflow-y-auto">
       <header className="flex items-center justify-between p-3 border-b border-neutral-800">
         <NodeBadge type={node.node_type} />
         <button
