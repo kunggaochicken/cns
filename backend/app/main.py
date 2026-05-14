@@ -132,7 +132,9 @@ async def lifespan(app: FastAPI):
 
     from app.agents.api import build_agents_router
 
-    app.include_router(build_agents_router(registry=registry, conn=conn))
+    app.include_router(
+        build_agents_router(registry=registry, conn=conn, dispatcher=dispatcher)
+    )
 
     from app.api.frontend import mount_frontend
 

@@ -1,15 +1,25 @@
 from fastapi import APIRouter, HTTPException
 
+from app.agents.dispatcher import Dispatcher
 from app.agents.registry import AgentRegistry
 from app.db.kuzu import KuzuConnection
 
 
-def build_agents_router(*, registry: AgentRegistry, conn: KuzuConnection) -> APIRouter:
+def build_agents_router(
+    *,
+    registry: AgentRegistry,
+    conn: KuzuConnection,
+    dispatcher: Dispatcher,
+) -> APIRouter:
     router = APIRouter()
 
     @router.get("/agents")
     def list_agents() -> list[dict]:
         return registry.list_agents()
+
+    @router.get("/agents/inflight")
+    def inflight() -> list[dict]:
+        return dispatcher.in_flight()
 
     @router.post("/agents/{agent_id}/pause")
     def pause(agent_id: str) -> dict:
