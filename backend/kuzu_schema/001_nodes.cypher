@@ -1,8 +1,11 @@
 CREATE NODE TABLE IF NOT EXISTS Thought(
   id STRING, content STRING, source STRING, created_at TIMESTAMP,
-  metadata STRING, embedding_id STRING,
+  metadata STRING, embedding_id STRING, content_hash STRING,
   PRIMARY KEY (id)
 );
+
+// Backfill column for DBs created before content_hash existed.
+ALTER TABLE Thought ADD IF NOT EXISTS content_hash STRING DEFAULT '';
 
 CREATE NODE TABLE IF NOT EXISTS Bet(
   id STRING, slug STRING, title STRING, vault_path STRING,

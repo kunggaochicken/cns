@@ -81,3 +81,28 @@ class NodeRepository:
         row = result[0]
         node_dict = row["n"] if isinstance(row.get("n"), dict) else row
         return node_dict
+
+    def find_thought_by_hash(self, content_hash: str, source: str) -> dict | None:
+        """Look up a Thought by (content_hash, source). Returns the node
+        dict (with metadata decoded back to dict) or None. Used by the
+        capture normalizer to dedup re-captures.
+        """
+        if not content_hash:
+            return None
+        cypher = (
+            "MATCH (t:Thought) WHERE t.content_hash = $h AND t.source = $s "
+            "RETURN t LIMIT 1"
+        )
+        result = self.conn.query(cypher, {"h": content_hash, "s": source})
+        if not result:
+            return None
+        row = result[0]
+        node = row["t"] if isinstance(row.get("t"), dict) else row
+        # Kuzu stores metadata as a JSON string (see create()); decode it back.
+        meta = node.get("metadata")
+        if isinstance(meta, str):
+            try:
+                node["metadata"] = json.loads(meta) if meta else {}
+            except json.JSONDecodeError:
+                node["metadata"] = {}
+        return node

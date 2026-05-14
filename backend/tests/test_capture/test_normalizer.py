@@ -68,3 +68,103 @@ async def test_normalize_publishes_thought_created_and_graph_changed(stack):
     assert len(graph_events) == 1
     assert graph_events[0].change_type == "node_created"
     assert graph_events[0].node_id == thought.id
+
+
+@pytest.mark.asyncio
+async def test_normalize_dedups_identical_content(stack):
+    """Re-capturing the same content+source returns the existing thought
+    and does NOT emit ThoughtCreated/GraphChanged the second time. This
+    prevents Obsidian re-saves from filling the graph with noisy duplicates.
+    """
+    thought_events: list[ThoughtCreated] = []
+    graph_events: list[GraphChanged] = []
+
+    async def on_thought(e: ThoughtCreated):
+        thought_events.append(e)
+
+    async def on_graph(e: GraphChanged):
+        graph_events.append(e)
+
+    stack["bus"].subscribe("thought.created", on_thought)
+    stack["bus"].subscribe("graph.changed", on_graph)
+
+    first = await normalize_and_persist(
+        content="hello world",
+        source="obsidian",
+        metadata={"vault_path": "note.md"},
+        nodes=stack["nodes"],
+        vec=stack["vec"],
+        bus=stack["bus"],
+        embedder=stack["embedder"],
+    )
+    second = await normalize_and_persist(
+        content="hello world",
+        source="obsidian",
+        metadata={"vault_path": "note.md"},
+        nodes=stack["nodes"],
+        vec=stack["vec"],
+        bus=stack["bus"],
+        embedder=stack["embedder"],
+    )
+    await asyncio.sleep(0.01)
+
+    assert first.id == second.id
+    rows = stack["nodes"].conn.query(
+        "MATCH (t:Thought) WHERE t.content = $c RETURN count(t) AS n",
+        {"c": "hello world"},
+    )
+    assert rows[0]["n"] == 1
+    # Second capture is a no-op on the event bus
+    assert len(thought_events) == 1
+    assert len(graph_events) == 1
+
+
+@pytest.mark.asyncio
+async def test_normalize_does_not_dedup_across_sources(stack):
+    """Same content from two different sources keeps both — capturing the
+    same idea via CLI and via Obsidian are different signals.
+    """
+    a = await normalize_and_persist(
+        content="same body",
+        source="cli",
+        metadata={},
+        nodes=stack["nodes"],
+        vec=stack["vec"],
+        bus=stack["bus"],
+        embedder=stack["embedder"],
+    )
+    b = await normalize_and_persist(
+        content="same body",
+        source="obsidian",
+        metadata={},
+        nodes=stack["nodes"],
+        vec=stack["vec"],
+        bus=stack["bus"],
+        embedder=stack["embedder"],
+    )
+    await asyncio.sleep(0.01)
+    assert a.id != b.id
+
+
+@pytest.mark.asyncio
+async def test_normalize_creates_new_when_content_differs(stack):
+    a = await normalize_and_persist(
+        content="first body",
+        source="cli",
+        metadata={},
+        nodes=stack["nodes"],
+        vec=stack["vec"],
+        bus=stack["bus"],
+        embedder=stack["embedder"],
+    )
+    b = await normalize_and_persist(
+        content="second body",
+        source="cli",
+        metadata={},
+        nodes=stack["nodes"],
+        vec=stack["vec"],
+        bus=stack["bus"],
+        embedder=stack["embedder"],
+    )
+    await asyncio.sleep(0.01)
+    assert a.id != b.id
