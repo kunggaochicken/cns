@@ -5,7 +5,7 @@ from app.db.kuzu import KuzuConnection
 from app.db.nodes import NodeRepository
 from app.db.schemas import EdgeRecord, GateItemNode, NodeType
 from app.events.bus import EventBus
-from app.events.schemas import FireNeuron, GateItemCreated
+from app.events.schemas import FireNeuron, GateItemCreated, GraphChanged
 from app.sparring.llm import SparringResult
 
 log = logging.getLogger(__name__)
@@ -101,4 +101,5 @@ async def route_sparring_result(
                 urgency=gate.urgency,
             )
         )
+        await bus.publish(GraphChanged(change_type="node_created", node_id=gate.id))
     # `novel`: no further action; thought stays indexed

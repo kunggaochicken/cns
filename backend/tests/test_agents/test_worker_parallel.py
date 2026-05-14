@@ -14,7 +14,7 @@ from app.db.kuzu import KuzuConnection
 from app.db.nodes import NodeRepository
 from app.db.schemas import ThoughtNode
 from app.events.bus import EventBus
-from app.events.schemas import FireNeuron
+from app.events.schemas import FireNeuron, GraphChanged
 
 
 @pytest.fixture
@@ -219,3 +219,65 @@ async def test_worker_failure_does_not_poison_siblings(stack, monkeypatch):
     )
     by_agent = {f["agent_id"]: f["outcome"] for f in firings}
     assert by_agent == {"cto-1": "failed", "eng-1": "success"}
+
+
+@pytest.mark.asyncio
+async def test_worker_emits_graph_changed_when_firing_is_created(stack, monkeypatch):
+    """A new AgentFiring must trigger a GraphChanged so the brain view updates."""
+    reg = AgentRegistry(nodes=stack["nodes"], conn=stack["conn"])
+    spec = AgentSpec(id="eng-1", role="engineer", persona="x")
+    reg.sync(FleetConfig(agents=[spec]))
+
+    def fake_init(self, *, spec, llm_cfg, vault_path, repo_path):
+        self.spec = spec
+
+    async def fake_run(self, *, firing_id, task_summary):
+        return AgentRunResult(summary="ok")
+
+    monkeypatch.setattr("app.agents.runtime.AgentRuntime.__init__", fake_init)
+    monkeypatch.setattr("app.agents.runtime.AgentRuntime.run", fake_run)
+
+    graph_events: list[GraphChanged] = []
+
+    async def on_graph(e: GraphChanged):
+        graph_events.append(e)
+
+    stack["bus"].subscribe("graph.changed", on_graph)
+
+    fleet = FleetConfig(agents=[spec])
+    dispatcher = Dispatcher(cfg=fleet.dispatch, bus=stack["bus"])
+    worker = AgentWorker(
+        registry=reg,
+        nodes=stack["nodes"],
+        edges=stack["edges"],
+        bus=stack["bus"],
+        llm_cfg=LLMConfig(provider="anthropic", model="x", api_key_env="X"),
+        fleet=fleet,
+        vault_path=stack["vault"],
+        repo_path=stack["repo"],
+        dispatcher=dispatcher,
+    )
+    worker.attach()
+
+    thought = ThoughtNode(content="x", source="cli")
+    stack["nodes"].create(thought)
+
+    await stack["bus"].publish(
+        FireNeuron(
+            thought_id=thought.id,
+            agent_role="engineer",
+            task_summary="x",
+        )
+    )
+    await asyncio.sleep(0.2)
+
+    firings = stack["conn"].query("MATCH (f:AgentFiring) RETURN f.id AS id")
+    assert len(firings) == 1
+    firing_id = firings[0]["id"]
+
+    node_created = [
+        e
+        for e in graph_events
+        if e.change_type == "node_created" and e.node_id == firing_id
+    ]
+    assert len(node_created) == 1

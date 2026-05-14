@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from app.db.schemas import GateItemNode
-from app.events.schemas import FireNeuron, GateItemCreated
+from app.events.schemas import FireNeuron, GateItemCreated, GraphChanged
 from app.sparring.llm import SparringEdge, SparringResult, SuggestedAction
 from app.sparring.router import route_sparring_result
 
@@ -77,5 +77,10 @@ async def test_conflict_creates_gate_item():
     nodes.create.assert_called()
     created_node = nodes.create.call_args.args[0]
     assert isinstance(created_node, GateItemNode)
-    published = bus.publish.call_args.args[0]
-    assert isinstance(published, GateItemCreated)
+    published_events = [call.args[0] for call in bus.publish.call_args_list]
+    gate_events = [e for e in published_events if isinstance(e, GateItemCreated)]
+    graph_events = [e for e in published_events if isinstance(e, GraphChanged)]
+    assert len(gate_events) == 1
+    assert len(graph_events) == 1
+    assert graph_events[0].change_type == "node_created"
+    assert graph_events[0].node_id == created_node.id
