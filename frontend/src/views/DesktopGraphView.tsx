@@ -55,7 +55,7 @@ export function DesktopGraphView({
   }, []);
 
   return (
-    <div ref={containerRef} className="flex-1 relative bg-neutral-950">
+    <div ref={containerRef} className="flex-1 min-w-0 relative bg-neutral-950">
       <ForceGraph2D
         graphData={graphData}
         width={dims.width}
