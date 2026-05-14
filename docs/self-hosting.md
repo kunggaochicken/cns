@@ -101,6 +101,32 @@ docker run --rm \
   alpine tar czf /host/gigabrain-backup.tgz /d
 ```
 
+## Parallel agent dispatch
+
+By default, the v2 agent worker runs one agent at a time. To process multiple
+`fire.neuron` events concurrently, set a `dispatch:` block in your `agents.yaml`:
+
+```yaml
+dispatch:
+  max_parallel: 3        # up to 3 agent runs at once across the whole fleet
+  per_role:
+    cto: 1               # never run two CTO agents concurrently
+    engineer: 2          # up to 2 engineer agents concurrently
+```
+
+Semantics:
+
+- **Per-role serialization:** two firings for the same role never overlap, even
+  when the global cap allows it. This avoids two agents in the same role racing
+  on a shared workspace.
+- **Failure isolation:** an agent run raising an exception marks that firing as
+  `outcome=failed` in the graph and does not abort sibling runs.
+- **Progress events:** every run emits `agent.run.started` and
+  `agent.run.completed` events over the SSE `/stream` channel, tagged with
+  `firing_id` so the brain view can correlate.
+- **Live state:** `GET /agents/inflight` returns the dispatcher's current
+  snapshot: `[{firing_id, role, started_at}]`.
+
 ## Troubleshooting
 
 - **`gigabrain-app` exits with `ANTHROPIC_API_KEY is required`** — `.env`
