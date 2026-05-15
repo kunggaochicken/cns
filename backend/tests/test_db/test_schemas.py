@@ -51,3 +51,14 @@ def test_edge_record_typed():
     )
     assert e.edge_type == "sparred-against"
     assert e.confidence == 0.82
+
+
+def test_thought_node_accepts_umap_coords():
+    from app.db.schemas import ThoughtNode
+
+    t = ThoughtNode(content="x", source="cli", umap_x=1.23, umap_y=-4.56)
+    assert t.umap_x == 1.23
+    assert t.umap_y == -4.56
+    t2 = ThoughtNode(content="y", source="cli")
+    assert t2.umap_x is None
+    assert t2.umap_y is None

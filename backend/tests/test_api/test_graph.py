@@ -71,3 +71,30 @@ def test_graph_node_by_id_returns_404_for_unknown(graph_app):
     client = TestClient(graph_app)
     response = client.get("/graph/nodes/does_not_exist")
     assert response.status_code == 404
+
+
+def test_graph_state_includes_umap_coords_when_present(tmp_path: Path):
+    conn = KuzuConnection(str(tmp_path / "umap.kuzu"))
+    conn.connect()
+    schema_dir = Path(__file__).parents[2] / "kuzu_schema"
+    conn.bootstrap_schema(schema_dir)
+    nodes = NodeRepository(conn)
+
+    thought = ThoughtNode(content="seed", source="web")
+    nodes.create(thought)
+    conn.query(
+        "MATCH (t:Thought) WHERE t.id = $id SET t.umap_x = 1.5, t.umap_y = -2.5",
+        {"id": thought.id},
+    )
+
+    app = FastAPI()
+    app.include_router(build_graph_router(conn))
+    try:
+        client = TestClient(app)
+        response = client.get("/graph/state")
+        assert response.status_code == 200
+        updated = next(n for n in response.json()["nodes"] if n["id"] == thought.id)
+        assert updated["umap_x"] == pytest.approx(1.5)
+        assert updated["umap_y"] == pytest.approx(-2.5)
+    finally:
+        conn.close()

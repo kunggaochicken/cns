@@ -45,11 +45,14 @@ async def lifespan(app: FastAPI):
 
     engine = SparringEngine(
         cfg=cfg.llm,
+        detectors_cfg=cfg.detectors,
+        conn=conn,
         nodes=nodes,
         edges=edges,
         vec=vec,
         bus=bus,
         embedder=embedder,
+        vault_path=cfg.agents.vault_path,
     )
     engine.attach()
 

@@ -23,6 +23,8 @@ export interface ThoughtNode extends NodeBase {
   content: string;
   source: string;
   metadata: Record<string, unknown>;
+  umap_x?: number | null;
+  umap_y?: number | null;
 }
 
 export interface BetNode extends NodeBase {
