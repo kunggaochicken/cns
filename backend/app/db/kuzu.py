@@ -15,7 +15,27 @@ class KuzuConnection:
         self._db = kuzu.Database(self.db_path)
         self._conn = kuzu.Connection(self._db)
 
+    def checkpoint(self) -> None:
+        """Flush the write-ahead log into the main database file.
+
+        Kuzu accumulates every write in the WAL and only checkpoints on a
+        graceful Database destructor. In a container that is SIGKILLed that
+        destructor never runs, so the WAL grows without bound and is replayed
+        in full on every open. A single un-replayable op (observed with schema
+        DDL) then permanently bricks the database with "Trying to create a
+        vector with ANY type". Checkpointing explicitly keeps the main file
+        authoritative and the WAL short.
+        """
+        if self._conn is None:
+            raise RuntimeError("Not connected")
+        self._conn.execute("CHECKPOINT")
+
     def close(self) -> None:
+        if self._conn is not None:
+            try:
+                self._conn.execute("CHECKPOINT")
+            except Exception:
+                pass
         self._conn = None
         self._db = None
 
@@ -42,3 +62,6 @@ class KuzuConnection:
             )
             for stmt in (s.strip() for s in cleaned.split(";") if s.strip()):
                 self._conn.execute(stmt)
+        # Flush all schema DDL into the main file immediately. DDL left only in
+        # the WAL has been observed to break WAL replay on the next open.
+        self._conn.execute("CHECKPOINT")
