@@ -55,5 +55,10 @@ def list_agents(config: str):
 cli.add_command(capture_cmd)
 
 
+from app.cli.umap import umap_group  # noqa: E402
+
+cli.add_command(umap_group)
+
+
 if __name__ == "__main__":
     cli()
