@@ -47,6 +47,8 @@ class ThoughtNode(_BaseNode):
     # SHA256 of normalized content; used to dedup re-captures from noisy
     # sources (Obsidian re-saves the same file repeatedly).
     content_hash: str = ""
+    umap_x: float | None = None
+    umap_y: float | None = None
 
 
 class BetNode(_BaseNode):

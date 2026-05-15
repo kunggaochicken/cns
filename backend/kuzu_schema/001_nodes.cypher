@@ -7,6 +7,11 @@ CREATE NODE TABLE IF NOT EXISTS Thought(
 // Backfill column for DBs created before content_hash existed.
 ALTER TABLE Thought ADD IF NOT EXISTS content_hash STRING DEFAULT '';
 
+// UMAP 2D coords for frontend brain-view positioning. NULL until first
+// `gigabrain umap recompute` run. Visualization-only — NOT a graph atom.
+ALTER TABLE Thought ADD IF NOT EXISTS umap_x DOUBLE DEFAULT NULL;
+ALTER TABLE Thought ADD IF NOT EXISTS umap_y DOUBLE DEFAULT NULL;
+
 CREATE NODE TABLE IF NOT EXISTS Bet(
   id STRING, slug STRING, title STRING, vault_path STRING,
   owner STRING, horizon STRING, confidence STRING, created_at TIMESTAMP,
