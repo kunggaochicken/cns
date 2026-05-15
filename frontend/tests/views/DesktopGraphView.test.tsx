@@ -11,6 +11,13 @@ vi.mock("react-force-graph-2d", () => ({
       data-width={String(props.width)}
       data-height={String(props.height)}
       data-nodes={JSON.stringify(props.graphData.nodes.map((n: any) => n.id))}
+      data-node-positions={JSON.stringify(
+        props.graphData.nodes.map((n: any) => ({
+          id: n.id,
+          x: n.x,
+          y: n.y,
+        })),
+      )}
       data-links={JSON.stringify(
         props.graphData.links.map((l: any) => `${l.source}::${l.target}`),
       )}
@@ -65,6 +72,43 @@ describe("DesktopGraphView", () => {
     const fg = screen.getByTestId("force-graph");
     expect(fg.dataset.nodes).toBe(JSON.stringify(["t_1", "b_1"]));
     expect(fg.dataset.links).toBe(JSON.stringify(["t_1::b_1"]));
+  });
+
+  it("seeds initial x/y on thought nodes that have umap coords", () => {
+    const seeded: ThoughtNode = {
+      node_type: "thought",
+      id: "t_seed",
+      content: "seeded",
+      source: "web",
+      created_at: "2026-05-12T00:00:00Z",
+      metadata: {},
+      umap_x: 1.2,
+      umap_y: -0.4,
+    };
+    const unseeded: ThoughtNode = {
+      node_type: "thought",
+      id: "t_unseeded",
+      content: "no coords",
+      source: "web",
+      created_at: "2026-05-12T00:00:00Z",
+      metadata: {},
+    };
+    const seedState: GraphState = {
+      nodes: [seeded, unseeded, bet],
+      edges: [],
+    };
+    render(<DesktopGraphView state={seedState} onNodeSelect={() => {}} />);
+    const fg = screen.getByTestId("force-graph");
+    const positions: { id: string; x?: number; y?: number }[] = JSON.parse(
+      fg.dataset.nodePositions ?? "[]",
+    );
+    const byId = new Map(positions.map((p) => [p.id, p]));
+    expect(byId.get("t_seed")?.x).toBeCloseTo(60); // 1.2 * 50
+    expect(byId.get("t_seed")?.y).toBeCloseTo(-20); // -0.4 * 50
+    expect(byId.get("t_unseeded")?.x).toBeUndefined();
+    expect(byId.get("t_unseeded")?.y).toBeUndefined();
+    expect(byId.get("b_1")?.x).toBeUndefined();
+    expect(byId.get("b_1")?.y).toBeUndefined();
   });
 
   it("onNodeClick calls onNodeSelect with the clicked node", async () => {

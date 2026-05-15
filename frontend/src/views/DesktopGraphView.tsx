@@ -10,12 +10,17 @@ interface ForceNode {
   raw: AnyNode;
   val: number;
   color: string;
+  x?: number;
+  y?: number;
 }
 
 interface ForceLink {
   source: string;
   target: string;
 }
+
+// UMAP coords are unit-ish; force-graph world coords are pixels.
+const UMAP_SCALE = 50;
 
 export function DesktopGraphView({
   state,
@@ -28,13 +33,23 @@ export function DesktopGraphView({
 
   const graphData = useMemo(() => {
     const scores = computeHotSpots(state);
-    const nodes: ForceNode[] = state.nodes.map((n) => ({
-      id: n.id,
-      node_type: n.node_type,
-      raw: n,
-      val: 1 + (scores.get(n.id) ?? 0) * 2,
-      color: NODE_HEX[n.node_type],
-    }));
+    const nodes: ForceNode[] = state.nodes.map((n) => {
+      const node: ForceNode = {
+        id: n.id,
+        node_type: n.node_type,
+        raw: n,
+        val: 1 + (scores.get(n.id) ?? 0) * 2,
+        color: NODE_HEX[n.node_type],
+      };
+      if (n.node_type === "thought") {
+        const t = n as { umap_x?: number | null; umap_y?: number | null };
+        if (t.umap_x != null && t.umap_y != null) {
+          node.x = t.umap_x * UMAP_SCALE;
+          node.y = t.umap_y * UMAP_SCALE;
+        }
+      }
+      return node;
+    });
     const links: ForceLink[] = state.edges.map((e) => ({
       source: e.from_id,
       target: e.to_id,
