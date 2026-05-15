@@ -23,6 +23,11 @@ class LLMConfig(BaseModel):
     api_key_env: str = "ANTHROPIC_API_KEY"
 
 
+class DetectorsConfig(BaseModel):
+    duplicate_enabled: bool = True
+    conflict_enabled: bool = True
+
+
 class TelemetryConfig(BaseModel):
     otlp_endpoint: str = "file://./data/traces"
 
@@ -67,6 +72,7 @@ class GigaBrainConfig(BaseModel):
     db: DBConfig = DBConfig()
     embeddings: EmbeddingsConfig = EmbeddingsConfig()
     llm: LLMConfig = LLMConfig()
+    detectors: DetectorsConfig = DetectorsConfig()
     telemetry: TelemetryConfig = TelemetryConfig()
     gigaflow: GigaFlowConfig = GigaFlowConfig()
     agents: AgentsConfig = AgentsConfig()
