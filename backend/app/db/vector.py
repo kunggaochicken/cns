@@ -1,8 +1,23 @@
+import math
 import sqlite3
 import threading
 from pathlib import Path
 
 import sqlite_vec
+
+
+def _normalize(vec: list[float]) -> list[float]:
+    """Scale a vector to unit length. Ollama embeddings (nomic-embed-text) are
+    not normalized — raw magnitudes run ~14-20 — so L2 distance between two
+    embeddings has no fixed relationship to cosine similarity. Normalizing on
+    write and on query makes sqlite-vec's L2 distance a pure function of the
+    angle: distance == sqrt(2 * (1 - cos)). The detector thresholds depend on
+    this identity. A zero vector is returned unchanged (cannot be normalized).
+    """
+    norm = math.sqrt(sum(x * x for x in vec))
+    if norm == 0.0:
+        return vec
+    return [x / norm for x in vec]
 
 
 class VectorStore:
@@ -33,22 +48,24 @@ class VectorStore:
             raise RuntimeError("Not connected")
         if len(embedding) != self.dim:
             raise ValueError(f"Expected dim {self.dim}, got {len(embedding)}")
+        normalized = _normalize(embedding)
         with self._lock:
             self._conn.execute("DELETE FROM embeddings WHERE id = ?", (id_,))
             self._conn.execute(
                 "INSERT INTO embeddings(id, embedding) VALUES (?, ?)",
-                (id_, sqlite_vec.serialize_float32(embedding)),
+                (id_, sqlite_vec.serialize_float32(normalized)),
             )
             self._conn.commit()
 
     def search(self, query: list[float], top_k: int = 12) -> list[dict]:
         if not self._conn:
             raise RuntimeError("Not connected")
+        normalized = _normalize(query)
         with self._lock:
             rows = self._conn.execute(
                 "SELECT id, distance FROM embeddings "
                 "WHERE embedding MATCH ? "
                 "ORDER BY distance LIMIT ?",
-                (sqlite_vec.serialize_float32(query), top_k),
+                (sqlite_vec.serialize_float32(normalized), top_k),
             ).fetchall()
         return [{"id": id_, "distance": dist} for id_, dist in rows]

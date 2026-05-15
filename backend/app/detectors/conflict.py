@@ -23,9 +23,12 @@ from app.events.schemas import GraphChanged
 log = logging.getLogger(__name__)
 
 _DEFAULT_TOP_K = 5
-# Contradictions sit near in embedding space — keep threshold loose-ish so we
-# don't miss them, but exclude truly unrelated thoughts.
-_DEFAULT_DISTANCE_THRESHOLD = 0.35
+# sqlite-vec L2 distance on unit-normalized vectors: L2 == sqrt(2 * (1 - cos)).
+# Contradictions are often topically related but lexically opposite, landing
+# mid-range in embedding space (e.g. "ship monday" vs "delay a month" ≈ cos 0.7,
+# L2 ≈ 0.77). Keep the gate loose — distance <= 0.9 ≈ cos >= 0.60 — so genuine
+# conflicts reach the sonnet dialectic check. top_k=5 bounds the LLM spend.
+_DEFAULT_DISTANCE_THRESHOLD = 0.9
 _DEFAULT_MIN_CONFIDENCE = 0.6
 
 

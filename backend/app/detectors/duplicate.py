@@ -16,10 +16,11 @@ from app.detectors.llm_clients import (
 
 log = logging.getLogger(__name__)
 
-# Cosine distance threshold from sqlite-vec. sqlite-vec returns L2 distance for
-# normalized vectors which approximates 2 * (1 - cos). distance <= 0.16 ≈ cos >= 0.92.
-# We filter pre-LLM at this threshold.
-_DEFAULT_DISTANCE_THRESHOLD = 0.16
+# sqlite-vec returns L2 distance. VectorStore normalizes every embedding to
+# unit length on write and on query, so for normalized vectors
+# L2 == sqrt(2 * (1 - cos)). distance <= 0.45 ≈ cos >= 0.90 — the pre-LLM
+# filter for "plausibly a duplicate". The haiku tiebreaker makes the final call.
+_DEFAULT_DISTANCE_THRESHOLD = 0.45
 _DEFAULT_TOP_K = 10
 
 
