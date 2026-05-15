@@ -9,8 +9,12 @@ ALTER TABLE Thought ADD IF NOT EXISTS content_hash STRING DEFAULT '';
 
 // UMAP 2D coords for frontend brain-view positioning. NULL until first
 // `gigabrain umap recompute` run. Visualization-only — NOT a graph atom.
-ALTER TABLE Thought ADD IF NOT EXISTS umap_x DOUBLE DEFAULT NULL;
-ALTER TABLE Thought ADD IF NOT EXISTS umap_y DOUBLE DEFAULT NULL;
+// IMPORTANT: do NOT add `DEFAULT NULL` — Kuzu 0.11 cannot bind a NULL literal
+// in a DEFAULT clause, the WAL records the failed DDL, and the DB fails to
+// reopen with "Trying to create a vector with ANY type". Omitting DEFAULT
+// produces the same nullable-NULL behavior we want.
+ALTER TABLE Thought ADD IF NOT EXISTS umap_x DOUBLE;
+ALTER TABLE Thought ADD IF NOT EXISTS umap_y DOUBLE;
 
 CREATE NODE TABLE IF NOT EXISTS Bet(
   id STRING, slug STRING, title STRING, vault_path STRING,
