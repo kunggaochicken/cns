@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -18,6 +19,11 @@ from app.embeddings.factory import build_provider
 from app.events.bus import EventBus
 from app.sparring.engine import SparringEngine
 from app.telemetry.otel import setup_otel
+
+logging.basicConfig(
+    level=os.environ.get("LOG_LEVEL", "INFO").upper(),
+    format="%(asctime)s %(name)s %(levelname)s %(message)s",
+)
 
 
 def _load_active_config() -> GigaBrainConfig:
