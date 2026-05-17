@@ -1,5 +1,9 @@
 # GigaBrain CNS — project conventions
 
+## PR Ownership
+
+When explicitly asked to own a PR through merge, keep monitoring review comments and CI. Address all actionable unresolved review threads, push fixes, rerun checks, and merge once CI is green, the branch is mergeable, and there are no unresolved requested changes. Stop and ask for user review before making or merging changes that are broad, risky, security-sensitive, data-destructive, migration-related, or likely to break existing behavior.
+
 ## Vision: GigaBrain is a delegation console for a leader
 
 GigaBrain is built for the **leader of any team** — most centrally a CEO, but the same shape applies to a team manager, tech lead, or anyone who delegates strategic work to people (or agents) who can mostly execute independently.
